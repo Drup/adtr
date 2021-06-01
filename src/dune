@@ -1,0 +1,22 @@
+(library
+ (name        adt4hpc)
+ (modules :standard \ main)
+ (libraries   containers peahell)
+ (flags -open Peahell)
+)
+
+(executable
+ (name main)
+ (public_name adt4hpc)
+ (modules main)
+ (libraries adt4hpc peahell.native)
+)
+
+(ocamllex
+ (modules lexer)
+)
+
+(menhir
+ (modules parser)
+ (flags --explain)
+)

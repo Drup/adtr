@@ -1,0 +1,6 @@
+type tree = Leaf (int) | Node (tree,int,tree)
+
+rotate (t:tree) : tree = rewrite t {
+  | Leaf (i) -> Leaf (i)
+  | Node (Node(x,i,y),j,z) -> Node (x,i,Node(y,j,z))
+}
