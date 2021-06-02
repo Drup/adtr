@@ -24,57 +24,6 @@ type t = {
   clauses : clause list;
 }
 
-module DepGraph = struct
-  module G = Graph.Persistent.Digraph.ConcreteLabeled(Name)(struct
-      type t = int
-      let default = 0
-      let compare = CCOrd.int
-    end)
-  include G
-
-  let conflict pos1 pos2 = match pos1, pos2 with
-    | Internal p1, Internal p2 -> Cursor.conflict p1 p2
-    | _ -> None
-  
-  let happens_before def1 def2 =
-    conflict def1.src def2.dest
-  let add_conflict g (name1,def1) (name2,def2) = 
-    let g =
-      match happens_before def1 def2 with
-      | Some i -> add_edge_e g (name1, i, name2)
-      | None -> g
-    in
-    match happens_before def2 def1 with
-    | Some i -> add_edge_e g (name2, i, name1)
-    | None -> g
-  
-  let create clause =
-    Name.Map.fold (fun name1 def1 g -> 
-        Name.Map.fold (fun name2 def2 g ->
-            add_conflict g (name1,def1) (name2,def2)
-          ) clause g
-      ) clause empty
-
-  module Topo = Graph.Topological.Make(G)
-  module Dot = struct
-    module G = struct
-      include G
-          
-      let graph_attributes _g = []
-      let default_vertex_attributes _g = []
-      let vertex_name n = n
-      let vertex_attributes _n = []
-      let default_edge_attributes _g = []
-      let edge_attributes (_,i,_) = [`Label (Fmt.str "%i" i) ]
-      let get_subgraph _v = None
-    end
-
-    include Graph.Graphviz.Dot(G)
-  end
-  let pp_dot = Dot.fprint_graph
-end
-
-
 (** Printers *)
 
 let pp_position fmt = function
@@ -98,3 +47,75 @@ let pp fmt
     Name.pp discriminant
     (Fmt.vbox @@ Fmt.list @@ Fmt.prefix (Fmt.unit "| ") pp_clause)
     clauses
+
+
+module DepGraph = struct
+  module Vertex = struct
+    type t = name * def
+    let compare = CCOrd.(map fst Name.compare)
+    let equal x y = compare x y = 0
+    let hash x = Hashtbl.hash @@ fst x
+  end
+  module Edge = struct
+    type t = int
+    let default = 0
+    let compare = CCOrd.int
+  end
+  module G = Graph.Persistent.Digraph.ConcreteLabeled(Vertex)(Edge)
+  include G
+
+  let conflict pos1 pos2 = match pos1, pos2 with
+    | Internal p1, Internal p2 -> Cursor.conflict p1 p2
+    | _ -> None
+  
+  let happens_before def1 def2 =
+    conflict def1.src def2.dest
+  let add_conflict g (name1,def1) (name2,def2) = 
+    let g =
+      match happens_before def1 def2 with
+      | Some i -> add_edge_e g ((name1,def1), i, (name2,def2))
+      | None -> g
+    in
+    match happens_before def2 def1 with
+    | Some i -> add_edge_e g ((name2,def2), i, (name1,def1))
+    | None -> g
+  
+  let create clause =
+    Name.Map.fold (fun name1 def1 g -> 
+        Name.Map.fold (fun name2 def2 g ->
+            add_conflict g (name1,def1) (name2,def2)
+          ) clause g
+      ) clause empty
+
+  module Topo = Graph.Topological.Make(G)
+  module Dot = struct
+    module G = struct
+      include G
+          
+      let graph_attributes _g = [ `Rankdir `LeftToRight ]
+      let default_vertex_attributes _g = []
+      let vertex_name (n,_) = n
+      let vertex_attributes (n,{src;dest;ty}) =
+        let shape =
+          if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box
+        in
+        let label =
+          Fmt.str "%a\n%a\n%a → %a"
+            Name.pp n Types.pp ty
+            pp_position src pp_position dest
+        in
+        [shape; `Label label]
+      let default_edge_attributes _g = []
+      let edge_attributes ((_,def1),i,(_,def2)) =
+        let label = Fmt.str "%i" i
+        in
+        [ `Label label;
+        ]
+      let get_subgraph _v = None
+    end
+
+    include Graph.Graphviz.Dot(G)
+  end
+  let pp_dot = Dot.fprint_graph
+end
+

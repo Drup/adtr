@@ -7,6 +7,11 @@ type error =
 exception Error of error
 let error e = raise @@ Error e
 
+let is_scalar ty = match ty with
+  | TInt -> true
+  | TConstructor _ -> false
+  | TVar _ -> assert false
+
 let rec pp fmt ty = match ty with
   | TInt -> Fmt.pf fmt "int"
   | TVar name -> Fmt.pf fmt "'%a" Name.pp name
