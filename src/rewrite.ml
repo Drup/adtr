@@ -25,20 +25,28 @@ type t = {
 }
 
 module DepGraph = struct
-  module G = Graph.Persistent.Digraph.Concrete(Name)
+  module G = Graph.Persistent.Digraph.ConcreteLabeled(Name)(struct
+      type t = int
+      let default = 0
+      let compare = CCOrd.int
+    end)
   include G
 
   let conflict pos1 pos2 = match pos1, pos2 with
     | Internal p1, Internal p2 -> Cursor.conflict p1 p2
-    | _ -> false
+    | _ -> None
   
   let happens_before def1 def2 =
     conflict def1.src def2.dest
   let add_conflict g (name1,def1) (name2,def2) = 
     let g =
-      if happens_before def1 def2 then add_edge g name1 name2 else g
+      match happens_before def1 def2 with
+      | Some i -> add_edge_e g (name1, i, name2)
+      | None -> g
     in
-    if happens_before def2 def1 then add_edge g name2 name1 else g
+    match happens_before def2 def1 with
+    | Some i -> add_edge_e g (name2, i, name1)
+    | None -> g
   
   let create clause =
     Name.Map.fold (fun name1 def1 g -> 
@@ -57,7 +65,7 @@ module DepGraph = struct
       let vertex_name n = n
       let vertex_attributes _n = []
       let default_edge_attributes _g = []
-      let edge_attributes _e = []
+      let edge_attributes (_,i,_) = [`Label (Fmt.str "%i" i) ]
       let get_subgraph _v = None
     end
 
