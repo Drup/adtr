@@ -24,6 +24,48 @@ type t = {
   clauses : clause list;
 }
 
+module DepGraph = struct
+  module G = Graph.Persistent.Digraph.Concrete(Name)
+  include G
+
+  let conflict pos1 pos2 = match pos1, pos2 with
+    | Internal p1, Internal p2 -> Cursor.conflict p1 p2
+    | _ -> false
+  
+  let happens_before def1 def2 =
+    conflict def1.src def2.dest
+  let add_conflict g (name1,def1) (name2,def2) = 
+    let g =
+      if happens_before def1 def2 then add_edge g name1 name2 else g
+    in
+    if happens_before def2 def1 then add_edge g name2 name1 else g
+  
+  let create clause =
+    Name.Map.fold (fun name1 def1 g -> 
+        Name.Map.fold (fun name2 def2 g ->
+            add_conflict g (name1,def1) (name2,def2)
+          ) clause g
+      ) clause empty
+
+  module Topo = Graph.Topological.Make(G)
+  module Dot = struct
+    module G = struct
+      include G
+          
+      let graph_attributes _g = []
+      let default_vertex_attributes _g = []
+      let vertex_name n = n
+      let vertex_attributes _n = []
+      let default_edge_attributes _g = []
+      let edge_attributes _e = []
+      let get_subgraph _v = None
+    end
+
+    include Graph.Graphviz.Dot(G)
+  end
+  let pp_dot = Dot.fprint_graph
+end
+
 
 (** Printers *)
 

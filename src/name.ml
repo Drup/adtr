@@ -1,5 +1,5 @@
-type t = string
-
+include String
+let hash = Hashtbl.hash
 let pp = Fmt.string
 
 module Map = CCMap.Make(String)

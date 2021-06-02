@@ -30,7 +30,15 @@ include Peahell.Make(struct
           Types.Env.add decl.name decl tyenv
         | Rewrite r ->
           let r = Typing.type_rewrite tyenv r in
-          Peahell.Report.printf "%a" Rewrite.pp r;
+          Peahell.Report.printf "%a@." Rewrite.pp r;
+          r.clauses |> List.iter (fun clause ->
+              let depgraph = Rewrite.DepGraph.create clause in
+              CCIO.File.with_temp ~prefix:"adt4hpc" ~suffix:".dot" (fun s ->
+                  CCIO.with_out s @@ fun oc -> 
+                  Rewrite.DepGraph.Dot.output_graph oc depgraph;
+                  ignore @@ CCUnix.call "xdot %s" s;
+                )
+            );
           tyenv        
       in
       List.fold_left f tyenv0 l

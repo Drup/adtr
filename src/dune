@@ -1,7 +1,7 @@
 (library
  (name        adt4hpc)
  (modules :standard \ main)
- (libraries   containers peahell)
+ (libraries   containers containers.unix peahell ocamlgraph)
  (flags -open Peahell)
 )
 
