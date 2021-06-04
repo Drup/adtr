@@ -7,3 +7,24 @@ rotate (t:tree) : tree = rewrite t {
   | Node (Node(Node(a,i1,b),i2,c),i3,d) ->
     Node (Node(a,i1,b),i2,Node(c,i3,d))
 }
+(*EXPECT
+rotate (t : tree) : tree = rewrite t {
+  | (i:int -- .0 → .0)
+  | (a:tree -- .0.0 → .0.0)
+    (b:tree -- .0.2.0 → .0.2)
+    (c:tree -- .0.2.2 → .2.0)
+    (d:tree -- .2 → .2.2)
+    (i1:int -- .0.1 → .0.1)
+    (i2:int -- .0.2.1 → .1)
+    (i3:int -- .1 → .2.1)
+  | (a:tree -- .0.0.0 → .0.0)
+    (b:tree -- .0.0.2 → .0.2)
+    (c:tree -- .0.2 → .2.0)
+    (d:tree -- .2 → .2.2)
+    (i1:int -- .0.0.1 → .0.1)
+    (i2:int -- .0.1 → .1)
+    (i3:int -- .1 → .2.1)
+}
+
+*)
+

@@ -83,7 +83,10 @@ rule token = parse
   | uppercase identchar* as name
       { try Hashtbl.find keyword_table name
         with Not_found -> UIDENT name }
-  | "/*"
+  | "(*EXPECT"
+      { let s = wrap_comment_lexer comment lexbuf in
+        EXPECT s }
+  | "(*"
       { let _ = wrap_comment_lexer comment lexbuf in
         token lexbuf }
   | "("  { LPAREN }
@@ -101,12 +104,12 @@ rule token = parse
       { error lexbuf (Peahell.Input.Lex.Illegal_character illegal_char) }
 
 and comment = parse
-    "/*"
+    "(*"
       { comment_start_loc := (Location.of_lex lexbuf) :: !comment_start_loc;
         store_lexeme lexbuf;
         comment lexbuf
       }
-  | "*/"
+  | "*)"
       { match !comment_start_loc with
         | [] -> assert false
         | [_] -> comment_start_loc := []; Location.of_lex lexbuf

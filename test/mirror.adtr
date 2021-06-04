@@ -4,17 +4,52 @@ mirror (t:tree) : tree = rewrite t {
   | Leaf (i) -> Leaf (i)
   | Node (a,i,b) -> Node (b,i,a)
 }
+(*EXPECT
+mirror (t : tree) : tree = rewrite t {
+  | (i:int -- .0 → .0)
+  | (a:tree -- .0 → .2)
+    (b:tree -- .2 → .0)
+    (i:int -- .1 → .1)
+}
+
+*)
 
 mirror2 (t:tree) : tree = rewrite t {
   | Leaf (i) -> Leaf (i)
   | Node (a,i,Node(b1,j,b2)) -> Node (Node(b2,j,b1),i,a)
 }
+(*EXPECT
+
+mirror2 (t : tree) : tree = rewrite t {
+  | (i:int -- .0 → .0)
+  | (a:tree -- .0 → .2)
+    (b1:tree -- .2.0 → .0.2)
+    (b2:tree -- .2.2 → .0.0)
+    (i:int -- .1 → .1)
+    (j:int -- .2.1 → .0.1)
+}
+
+*)
 
 mirror3 (t:tree) : tree = rewrite t {
   | Leaf (i) -> Leaf (i)
   | Node (Node(a1,ia,a2),i,Node(b1,ib,b2)) ->
     Node (Node(b2,ib,b1),i,Node(a2,ia,a1))
 }
+(*EXPECT
+
+mirror3 (t : tree) : tree = rewrite t {
+  | (i:int -- .0 → .0)
+  | (a1:tree -- .0.0 → .2.2)
+    (a2:tree -- .0.2 → .2.0)
+    (b1:tree -- .2.0 → .0.2)
+    (b2:tree -- .2.2 → .0.0)
+    (i:int -- .1 → .1)
+    (ia:int -- .0.1 → .2.1)
+    (ib:int -- .2.1 → .0.1)
+}
+
+*)
 
 type tree3 = LeafX (int) | NodeX (tree,tree,tree)
 
@@ -22,3 +57,14 @@ mirror (t:tree3) : tree3 = rewrite t {
   | LeafX (i) -> LeafX (i)
   | NodeX (a,b,c) -> NodeX (c,a,b)
 }
+(*EXPECT
+
+mirror (t : tree3) : tree3 = rewrite t {
+  | (i:int -- .0 → .0)
+  | (a:tree -- .0 → .1)
+    (b:tree -- .1 → .2)
+    (c:tree -- .2 → .0)
+}
+
+*)
+

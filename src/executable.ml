@@ -2,7 +2,11 @@ include Peahell.Make(struct
 
     let name = "adt4hpc"
     type input = Syntax.program
-    let options = []
+
+    let show_depgraph = ref false
+    let options = [
+      "--depgraph", Arg.Set show_depgraph, "Show the dependency graph. Requires xdot to be available."
+    ]
  
     type environment = Types.Env.t
     let initial_environment = Types.Env.empty
@@ -22,7 +26,11 @@ include Peahell.Make(struct
         Peahell.Input.wrap (Parser.toplevel_phrase Lexer.token) lexbuf
       in
       Some f
-    let expect_parser = None 
+    let expect_parser = 
+      let f _name lexbuf =
+        Peahell.Input.wrap (Parser.expect_file Lexer.token) lexbuf        
+      in
+      Some ( "(*EXPECT", "*)", f)
     
     let exec fmt _import tyenv0 l =
       let f tyenv = function
@@ -31,15 +39,16 @@ include Peahell.Make(struct
         | Rewrite r ->
           let r = Typing.type_rewrite tyenv r in
           Peahell.Report.printf "%a@." Rewrite.pp r;
-          r.clauses |> List.iter (fun clause ->
-              let depgraph = Rewrite.DepGraph.create clause in
-              if not @@ Rewrite.DepGraph.is_empty depgraph then
-                CCIO.File.with_temp ~prefix:"adt4hpc" ~suffix:".dot" (fun s ->
-                    CCIO.with_out s @@ fun oc -> 
-                    Rewrite.DepGraph.Dot.output_graph oc depgraph;
-                    ignore @@ CCUnix.call "xdot %s" s;
-                  )
-            );
+          if !show_depgraph then
+            r.clauses |> List.iter (fun clause ->
+                let depgraph = Rewrite.DepGraph.create clause in
+                if not @@ Rewrite.DepGraph.is_empty depgraph then
+                  CCIO.File.with_temp ~prefix:"adt4hpc" ~suffix:".dot" (fun s ->
+                      CCIO.with_out s @@ fun oc -> 
+                      Rewrite.DepGraph.Dot.output_graph oc depgraph;
+                      ignore @@ CCUnix.call "xdot %s" s;
+                    )
+              );
           tyenv        
       in
       List.fold_left f tyenv0 l

@@ -6,3 +6,21 @@ add (tree: t, newt: t) : t = rewrite tree {
   | Node4 (t1,t2,t3,t4) ->
     Node4(t1,t2,t3,Node2(t4,newt))
 }
+(*EXPECT
+add (tree : tnewt : t) : t = rewrite tree {
+  | (newt:t -- x → .2)
+    (t1:t -- .0 → .0)
+    (t2:t -- .1 → .1)
+  | (newt:t -- x → .3)
+    (t1:t -- .0 → .0)
+    (t2:t -- .1 → .1)
+    (t3:t -- .2 → .2)
+  | (newt:t -- x → .3.1)
+    (t1:t -- .0 → .0)
+    (t2:t -- .1 → .1)
+    (t3:t -- .2 → .2)
+    (t4:t -- .3 → .3.0)
+}
+
+*)
+

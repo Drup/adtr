@@ -37,6 +37,8 @@ let () = Report.register_report_of_exn prepare_error
 %token LACCO RACCO
 %token BAR ARROW
 %token TYPE INT
+%token <string> EXPECT
+
 
 /* Entry points */
 
@@ -45,13 +47,17 @@ let () = Report.register_report_of_exn prepare_error
 %type <Syntax.program> program
 %start toplevel_phrase
 %type <Syntax.program> toplevel_phrase
-/* %start expect_file */
-/* %type <(Syntax.program * int * int) list> expect_file */
+%start expect_file
+%type <(Syntax.program * int * int) list> expect_file
 
 %%
 
 program: list(command) EOF {$1}
 toplevel_phrase: list(command) DOT {$1}
+expect_file: expect_item* EOF {$1}
+%inline expect_item:
+  | l = command+ EXPECT { l, $endofs(l), $endofs($2) }
+;
 
 command: type_declaration | rewrite { $1 };
 

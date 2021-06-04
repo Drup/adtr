@@ -1,0 +1,21 @@
+(* -*- tuareg -*- *)
+
+let pp_stanza ppf filename =
+  let base = Filename.remove_extension filename in
+  Format.fprintf ppf {|
+(rule
+ (with-stdout-to %s.output (run adtr -m expect %%{dep:%s.adtr})))
+(rule
+ (alias runtest)
+ (action (diff %s.adtr %s.output)))|}
+    base base base base
+
+let is_error_test fn = Filename.check_suffix fn ".adtr"
+let () =
+  let l =
+    Sys.readdir "."
+    |> Array.to_list
+    |> List.filter is_error_test
+  in
+  let s = Format.asprintf "%a@." (Format.pp_print_list pp_stanza) l in
+  Jbuild_plugin.V1.send s
