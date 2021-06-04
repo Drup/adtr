@@ -57,9 +57,9 @@ module DepGraph = struct
     let hash x = Hashtbl.hash @@ fst x
   end
   module Edge = struct
-    type t = int
-    let default = 0
-    let compare = CCOrd.int
+    type t = Cursor.cursor
+    let default = Cursor.empty
+    let compare = compare
   end
   module G = Graph.Persistent.Digraph.ConcreteLabeled(Vertex)(Edge)
   include G
@@ -113,7 +113,7 @@ module DepGraph = struct
         [shape; `Label label]
       let default_edge_attributes _g = []
       let edge_attributes ((_,def1),i,(_,def2)) =
-        let label = Fmt.str "%i" i
+        let label = Fmt.str "%a" Cursor.pp i
         in
         [ `Label label;
         ]
