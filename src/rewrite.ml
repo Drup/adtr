@@ -70,7 +70,7 @@ module DepGraph = struct
   
   let happens_before def1 def2 =
     conflict def1.src def2.dest
-  let add_conflict g (name1,def1) (name2,def2) = 
+  let add_conflict g (name1,def1) (name2,def2) =
     let g =
       match happens_before def1 def2 with
       | Some i -> add_edge_e g ((name1,def1), i, (name2,def2))
@@ -80,12 +80,16 @@ module DepGraph = struct
     | Some i -> add_edge_e g ((name2,def2), i, (name1,def1))
     | None -> g
   
-  let create clause =
+  let create moves =
+    let is_identity_moves def = def.src = def.dest in
+    let moves =
+      Name.Map.filter (fun _ def -> not @@ is_identity_moves def) moves
+    in
     Name.Map.fold (fun name1 def1 g -> 
         Name.Map.fold (fun name2 def2 g ->
             add_conflict g (name1,def1) (name2,def2)
-          ) clause g
-      ) clause empty
+          ) moves g
+      ) moves empty
 
   module Topo = Graph.Topological.Make(G)
   module Dot = struct
