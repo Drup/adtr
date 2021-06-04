@@ -1,0 +1,27 @@
+opam-version: "2.0"
+name: "adtr"
+maintainer: "Gabriel Radanne <drupyog@zoho.com>"
+authors: "Gabriel Radanne <drupyog@zoho.com>"
+homepage: "https://github.com/Drup/adtr"
+bug-reports: "https://github.com/Drup/adtr/issues"
+license: "MIT"
+dev-repo: "git+https://github.com/Drup/adtr.git"
+synopsis: "ADT rewriting toy language"
+
+build: [
+  ["dune" "subst"]{pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
+
+depends: [
+  "ocaml"
+  "dune" {build & >= "2.7"}
+  "containers"
+  "menhir"
+  "ocamlgraph"
+  "peahell"
+]
+pin-depends: [
+  "peahell.0.1" "git://github.com/Drup/peahell/"
+]
