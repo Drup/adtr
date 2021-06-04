@@ -52,8 +52,11 @@ let () = Report.register_report_of_exn prepare_error
 
 %%
 
-program: list(command) EOF {$1}
-toplevel_phrase: list(command) DOT {$1}
+program: list(program_item) EOF {$1}
+program_item: command EXPECT? {$1}
+
+toplevel_phrase: list(program_item) DOT {$1}
+
 expect_file: expect_item* EOF {$1}
 %inline expect_item:
   | l = command+ EXPECT { l, $endofs(l), $endofs($2) }
