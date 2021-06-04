@@ -1,5 +1,5 @@
 (library
- (name        adt4hpc)
+ (name        adtr)
  (modules :standard \ main)
  (libraries   containers containers.unix peahell ocamlgraph)
  (flags -open Peahell)
@@ -7,9 +7,9 @@
 
 (executable
  (name main)
- (public_name adt4hpc)
+ (public_name adtr)
  (modules main)
- (libraries adt4hpc peahell.native)
+ (libraries adtr peahell.native)
 )
 
 (ocamllex

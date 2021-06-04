@@ -1,18 +1,28 @@
-# A general and principled approach to Rust's niche
+# ADT rewriting
 
-The Rust compiler has recently introduced (see [74699](https://github.com/rust-lang/rust/pull/74699/files)) a
-notion of _niche_. Roughly speaking, the idea consists in:
-* an ability to declare sub-types of usual base types at the language level.
-* support on the compiler side to exploit this sub-typing information to optimize the memory-representation of data-types. 
+ADTs are generally represented by a spaghetti plate of pointers, for each
+constructors of the algebraic data type. Furthermore, they are generally
+manipulated persistently, by allocating new constructors.
 
-A typical example is the declaration of a non-zero int32, and the compiler representing an option on such a value in memory over 32 bits, using the ``0'' pattern to represent None.
+This is an attempt at representing ADTs in a flat way and compiling a 
+pattern match-like construction as a rewrite on the memory representation.
+The goal is to then use this representation to optimize the rewriting and 
+exploit parallelism.
 
-With this work, we explore how far this idea can be pushed in the context of an
-ML-like language. We are both interested in extending the applicability of the
-techniques, as well as ensuring static guarantees.
+## To compile:
+```
+opam install --deps .
+make
+```
 
-## Meta
+## To run the tests
+```
+make test
+```
 
-- Author(s):
-  - Gabriel Radanne
-  - Yannick Zakowski
+## Run only one file
+```
+dune exec adtr -m batch path/to/file
+```
+
+You can use `--dot` to get dot files of the dependency graphs of the rewrite operations.

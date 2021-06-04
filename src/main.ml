@@ -1,1 +1,1 @@
-let () = Adt4hpc.Executable.main ()
+let () = Adtr.Executable.main ()
