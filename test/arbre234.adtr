@@ -1,0 +1,8 @@
+type t = Leaf (int) | Node2 (t,t) | Node3 (t,t,t) | Node4 (t,t,t,t)
+
+add (tree: t, newt: t) : t = rewrite tree {
+  | Node2 (t1,t2) -> Node3(t1,t2,newt)
+  | Node3 (t1,t2,t3) -> Node4(t1,t2,t3,newt)
+  | Node4 (t1,t2,t3,t4) ->
+    Node4(t1,t2,t3,Node2(t4,newt))
+}

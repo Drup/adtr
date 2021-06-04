@@ -2,5 +2,8 @@ type tree = Leaf (int) | Node (tree,int,tree)
 
 rotate (t:tree) : tree = rewrite t {
   | Leaf (i) -> Leaf (i)
-  | Node (Node(a,i1,Node(b,i2,c)),i3,d) -> Node (Node(a,i1,b),i2,Node(c,i3,d))
+  | Node (Node(a,i1,Node(b,i2,c)),i3,d) ->
+    Node (Node(a,i1,b),i2,Node(c,i3,d))
+  | Node (Node(Node(a,i1,b),i2,c),i3,d) ->
+    Node (Node(a,i1,b),i2,Node(c,i3,d))
 }
