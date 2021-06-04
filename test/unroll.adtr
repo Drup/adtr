@@ -1,0 +1,43 @@
+type t = Node (t,t)
+
+erase1 (x:t) : t = rewrite x {
+  | Node(Node (x, a),b) -> x
+}
+(*EXPECT
+erase1 (x : t) : t = rewrite x {
+  | (a:t -- .0.1 → ø)
+    (b:t -- .1 → ø)
+    (x:t -- .0.0 → )
+}
+
+*)
+
+erase2 (x:t) : t = rewrite x {
+  | Node(Node (Node(x1,x2), a),b) -> Node(x1,x2)
+}
+(*EXPECT
+
+erase2 (x : t) : t = rewrite x {
+  | (a:t -- .0.1 → ø)
+    (b:t -- .1 → ø)
+    (x1:t -- .0.0.0 → .0)
+    (x2:t -- .0.0.1 → .1)
+}
+
+*)
+
+erase3 (x:t) : t = rewrite x {
+  | Node(Node (Node(Node(x1,x2),x3), a),b) -> Node(Node(x1,x2),x3)
+}
+(*EXPECT
+
+erase3 (x : t) : t = rewrite x {
+  | (a:t -- .0.1 → ø)
+    (b:t -- .1 → ø)
+    (x1:t -- .0.0.0.0 → .0.0)
+    (x2:t -- .0.0.0.1 → .0.1)
+    (x3:t -- .0.0.1 → .1)
+}
+
+*)
+

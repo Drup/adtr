@@ -81,9 +81,11 @@ module DepGraph = struct
     | None -> g
   
   let create moves =
-    let is_identity_moves def = def.src = def.dest in
+    let is_interesting_moves def =
+      def.src = def.dest || def.dest = Absent
+    in
     let moves =
-      Name.Map.filter (fun _ def -> not @@ is_identity_moves def) moves
+      Name.Map.filter (fun _ def -> not @@ is_interesting_moves def) moves
     in
     Name.Map.fold (fun name1 def1 g -> 
         Name.Map.fold (fun name2 def2 g ->
