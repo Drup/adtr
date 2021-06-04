@@ -7,11 +7,6 @@ type error =
 exception Error of error
 let error e = raise @@ Error e
 
-let is_scalar ty = match ty with
-  | TInt -> true
-  | TConstructor _ -> false
-  | TVar _ -> assert false
-
 let rec pp fmt ty = match ty with
   | TInt -> Fmt.pf fmt "int"
   | TVar name -> Fmt.pf fmt "'%a" Name.pp name
@@ -21,6 +16,25 @@ let rec pp fmt ty = match ty with
     Fmt.pf fmt "%a (%a)"
       Name.pp constructor
       (Fmt.list ~sep:Fmt.comma pp) arguments
+
+let prepare_error = function
+  | Error (Unbound_type_variable n) -> 
+    Some (Report.errorf "The type variable %a is unbounded" Name.pp n)
+  | Error (Unbound_type n) -> 
+    Some (Report.errorf "The type constructor %a is unbounded" Name.pp n)
+  | Error (Bad_constructor (n, ty)) ->
+    Some
+      (Report.errorf "The data constructor %a doesn't belong to the type %a."
+         Name.pp n pp ty)
+  | _ -> None
+
+let () =
+  Report.register_report_of_exn prepare_error
+
+let is_scalar ty = match ty with
+  | TInt -> true
+  | TConstructor _ -> false
+  | TVar _ -> assert false
 
 module Env = struct
 
