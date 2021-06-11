@@ -251,6 +251,17 @@ module DepGraph (Mem : MEM) = struct
     include Graph.Graphviz.Dot(G)
   end
   let pp_dot = Dot.fprint_graph
+
+  let show g =
+    CCIO.File.with_temp ~prefix:"adt4hpc" ~suffix:".dot" (fun s ->
+        CCIO.with_out s @@ fun oc -> 
+        Dot.output_graph oc g;
+        ignore @@ CCUnix.call "xdot %s" s
+      ) 
+
+  let create_and_show input =
+    let g = create input in
+    if not @@ is_empty g then show g
 end
 
 module WithCursor = DepGraph(struct

@@ -40,16 +40,7 @@ include Peahell.Make(struct
           let cursor_moves = Typing.type_rewrite tyenv r in
           let mem_moves = Rewrite.cursor2mem tyenv cursor_moves in
           Peahell.Report.printf "%a@." (Rewrite.pp Rewrite.Mem.pp) mem_moves;
-          if !show_depgraph then
-            mem_moves.clauses |> List.iter (fun clause ->
-                let depgraph = Rewrite.WithMem.create clause in
-                if not @@ Rewrite.WithMem.is_empty depgraph then
-                  CCIO.File.with_temp ~prefix:"adt4hpc" ~suffix:".dot" (fun s ->
-                      CCIO.with_out s @@ fun oc -> 
-                      Rewrite.WithMem.Dot.output_graph oc depgraph;
-                      ignore @@ CCUnix.call "xdot %s" s;
-                    )
-              );
+          if !show_depgraph then List.iter Rewrite.WithMem.create_and_show mem_moves.clauses ;
           tyenv        
       in
       List.fold_left f tyenv0 l
