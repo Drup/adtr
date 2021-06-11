@@ -20,6 +20,12 @@ add (tree : tnewt : t) : t = rewrite tree {
     (t4.Node3-0:t -- Cell(.Node4-3.Node2-0^k11.Node3-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Node3-0))
     (t4.Node4-0:t -- Cell(.Node4-3.Node2-0^k11.Node4-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Node4-0))
     (t4.Leaf-0:int -- Cell(.Node4-3.Node2-0^k11.Leaf-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Leaf-0))
+    (t4.Node2-1:t -- Layer(k12,.Node4-3.Node2-0^k11.Node2-1) → Layer(k12,.Node4-3.Node2-0.Node2-0^k11.Node2-1))
+    (t4.Node3-1:t -- Layer(k13,.Node4-3.Node2-0^k11.Node3-1) → Layer(k13,.Node4-3.Node2-0.Node2-0^k11.Node3-1))
+    (t4.Node3-2:t -- Layer(k14,.Node4-3.Node2-0^k11.Node3-2) → Layer(k14,.Node4-3.Node2-0.Node2-0^k11.Node3-2))
+    (t4.Node4-1:t -- Layer(k15,.Node4-3.Node2-0^k11.Node4-1) → Layer(k15,.Node4-3.Node2-0.Node2-0^k11.Node4-1))
+    (t4.Node4-2:t -- Layer(k16,.Node4-3.Node2-0^k11.Node4-2) → Layer(k16,.Node4-3.Node2-0.Node2-0^k11.Node4-2))
+    (t4.Node4-3:t -- Layer(k17,.Node4-3.Node2-0^k11.Node4-3) → Layer(k17,.Node4-3.Node2-0.Node2-0^k11.Node4-3))
 }
 
 *)

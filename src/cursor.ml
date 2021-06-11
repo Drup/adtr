@@ -31,7 +31,8 @@ let rec invert (p : path) : cursor =
 let movement p1 p2 =
     invert p1 ++ p2
 
-(** [conflict p1 p2] computes if one path is prefix of the other *)
+(** [conflict p1 p2] computes if one path is prefix of the other.
+    Return which one is shortest, along with the extra bits *)
 let rec conflict (p1:path) (p2:path) = match p1, p2 with
   | `Multiple _ :: [], `Multiple _ :: l
   | [], l -> Some (`left, l)
@@ -44,13 +45,13 @@ let rec conflict (p1:path) (p2:path) = match p1, p2 with
     begin match conflict p1 p2 with
       | None -> conflict t1 p2
       | Some (`right,_) as o -> o
-      | Some (`left, extra) -> conflict t1 extra
+      | Some (`left, extra) -> (* conflict t1 extra *) None
     end
   | (`Down _ :: _), `Multiple (_,p2) :: t2 ->
     begin match conflict p1 p2 with
       | None -> conflict p1 t2
       | Some (`left, _) as o -> o
-      | Some (`right, extra) -> conflict extra t2
+      | Some (`right, extra) -> (* conflict extra t2 *) None
     end
   | (`Down x1)::t1, (`Down x2)::t2 ->
     if x1 = x2 then conflict t1 t2
@@ -66,17 +67,17 @@ let rec overlap (p1:path) (p2:path) = match p1, p2 with
   | (`Down x1)::t1, (`Down x2)::t2 ->
     x1 = x2 && overlap t1 t2
   | `Multiple (_,rep1) :: t1, p2 ->
-    overlap t1 p2 || 
-    begin match conflict rep1 p2 with
-      | None -> false
-      | _ -> overlap (rep1 @ p1) p2
-    end
+    overlap t1 p2 (* || 
+     * begin match conflict rep1 p2 with
+     *   | None -> false
+     *   | _ -> overlap (rep1 @ p1) p2
+     * end *)
   | p1, `Multiple (_,rep2) :: t2 ->
-    overlap p1 t2 || 
-    begin match conflict p1 rep2 with
-      | None -> false
-      | _ -> overlap p1 (rep2 @ p2)
-    end
+    overlap p1 t2(*  || 
+     * begin match conflict p1 rep2 with
+     *   | None -> false
+     *   | _ -> overlap p1 (rep2 @ p2)
+     * end *)
 
 let rec pp_cursor fmt (c: cursor) = match c with
   | [] -> ()

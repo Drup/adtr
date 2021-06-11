@@ -66,10 +66,7 @@ module Mem = struct
     match mem1, mem2 with
     | Cell p1, Cell p2 -> if Cursor.overlap p1 p2 then Some Cursor.empty else None
     | Layer (_, p1), Layer (_, p2) ->
-      CCOpt.map (function
-          | `left, p -> (p : Cursor.path :> Cursor.cursor)
-          | `right, p -> Cursor.invert p)
-        @@ Cursor.conflict p1 p2
+      if Cursor.overlap p1 p2 then Some Cursor.empty else None
     | _ -> None
 end
 
@@ -129,7 +126,7 @@ let cursor2mem tyenv r =
           complement_path tyenv ty vector
         in
         (* Report.infof "Rewrite"
-         *   "@[<v>Movement:%a@,Cell:%a@,Moves:%a@]@."
+         *   "@[<v>Movement:%a@,Cells:%a@,Cursors:%a@]@."
          *   Cursor.pp vector
          *   Fmt.(box @@ Dump.list Cursor.pp) cell_suffixes
          *   Fmt.(box @@ Dump.list @@ (fun fmt (p,c) -> Fmt.pf fmt "%a/%a" Cursor.pp p Types.pp c)) cursor_suffixes; *)
