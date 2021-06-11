@@ -7,19 +7,85 @@ add (tree: t, newt: t) : t = rewrite tree {
     Node4(t1,t2,t3,Node2(t4,newt))
 }
 (*EXPECT
+Info Rewrite: .Node4-0 ⋈ .Node4-0 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-1 ⋈ .Node4-1 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-2 ⋈ .Node4-2 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-3 ⋈ .Node4-3.Node2-0 = .Node2-0
+
+Info Rewrite: Movement:.Node2-0
+              Cell:[[]; .Node3-0; .Node4-0]
+              Moves:[.Leaf-0/int; 
+                     .Node2-1/t; 
+                     .Node3-1/t; 
+                     .Node3-2/t; 
+                     .Node4-1/t; 
+                     .Node4-2/t; 
+                     .Node4-3/t]
+
+Info Rewrite: .Node4-3.Node2-0^k11.Node2-1 ⋈ .Node4-3.Node2-0.Node2-0^k11.Node2-1 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-3.Node2-0^k11.Node3-1 ⋈ .Node4-3.Node2-0.Node2-0^k11.Node3-1 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-3.Node2-0^k11.Node3-2 ⋈ .Node4-3.Node2-0.Node2-0^k11.Node3-2 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-3.Node2-0^k11.Node4-1 ⋈ .Node4-3.Node2-0.Node2-0^k11.Node4-1 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-3.Node2-0^k11.Node4-2 ⋈ .Node4-3.Node2-0.Node2-0^k11.Node4-2 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
+Info Rewrite: .Node4-3.Node2-0^k11.Node4-3 ⋈ .Node4-3.Node2-0.Node2-0^k11.Node4-3 = []
+
+Info Rewrite: Movement:[]
+              Cell:[]
+              Moves:[]
+
 add (tree : tnewt : t) : t = rewrite tree {
-  | (newt:t -- x → .2)
-    (t1:t -- .0 → .0)
-    (t2:t -- .1 → .1)
-  | (newt:t -- x → .3)
-    (t1:t -- .0 → .0)
-    (t2:t -- .1 → .1)
-    (t3:t -- .2 → .2)
-  | (newt:t -- x → .3.1)
-    (t1:t -- .0 → .0)
-    (t2:t -- .1 → .1)
-    (t3:t -- .2 → .2)
-    (t4:t -- .3 → .3.0)
+  | (newt:t -- x → Layer(k0,.Node3-2))
+    (t1:t -- Layer(k1,.Node2-0) → Layer(k1,.Node3-0))
+    (t2:t -- Layer(k2,.Node2-1) → Layer(k2,.Node3-1))
+  | (newt:t -- x → Layer(k3,.Node4-3))
+    (t1:t -- Layer(k4,.Node3-0) → Layer(k4,.Node4-0))
+    (t2:t -- Layer(k5,.Node3-1) → Layer(k5,.Node4-1))
+    (t3:t -- Layer(k6,.Node3-2) → Layer(k6,.Node4-2))
+  | (newt:t -- x → Layer(k7,.Node4-3.Node2-1))
+    (t4[]:t -- Cell(.Node4-3.Node2-0^k11) → Cell(.Node4-3.Node2-0.Node2-0^k11))
+    (t4.Node3-0:t -- Cell(.Node4-3.Node2-0^k11.Node3-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Node3-0))
+    (t4.Node4-0:t -- Cell(.Node4-3.Node2-0^k11.Node4-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Node4-0))
+    (t4.Leaf-0:int -- Cell(.Node4-3.Node2-0^k11.Leaf-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Leaf-0))
 }
 
 *)

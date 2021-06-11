@@ -44,7 +44,7 @@ let type_pattern tyenv posmap0 pattern0 pat_ty0 =
       in
       CCList.foldi2
         (fun env i pattern pat_ty ->
-           aux env (path@[`Down i]) pattern pat_ty)
+           aux env Cursor.(path +/ down constructor i) pattern pat_ty)
         posmap arguments argument_tys
   in
   aux posmap0 Cursor.empty pattern0 pat_ty0
@@ -63,7 +63,7 @@ let type_expression tyenv env posmap0 expr0 expr_ty0 =
       in
       CCList.foldi2
         (fun env i expr expr_ty ->
-           aux env (path@[`Down i]) expr expr_ty)
+           aux env Cursor.(path +/ down constructor i) expr expr_ty)
         posmap arguments argument_tys
   in
   aux posmap0 Cursor.empty expr0 expr_ty0
@@ -78,11 +78,13 @@ let type_clause tyenv env (pattern, pat_ty) (expr, expr_ty) =
   Name.Map.merge_safe srcs dests
     ~f:((fun name -> function
         | `Left (src, ty) ->
-          Some {Rewrite. src; dest = Absent ; ty }
+          Some {Rewrite. name ; src; dest = Absent ; ty }
         | `Right dest -> failwith "unbound var"
         | `Both ((src, ty), dest) ->
-          Some {Rewrite. src; dest; ty }
+          Some {Rewrite. name ; src; dest; ty }
       ))
+  |> Name.Map.values
+  |> CCList.of_iter
 
 let type_rewrite
     tyenv {Syntax. f ; parameters ; return_ty ; discriminant ; clauses } =

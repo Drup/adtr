@@ -4,6 +4,7 @@ type error =
   | Unbound_type of Name.t
   | Unbound_type_variable of Name.t
   | Bad_constructor of name * Syntax.type_expr
+  | No_constructor of Syntax.type_expr
 exception Error of error
 let error e = raise @@ Error e
 
@@ -26,6 +27,10 @@ let prepare_error = function
     Some
       (Report.errorf "The data constructor %a doesn't belong to the type %a."
          Name.pp n pp ty)
+  | Error (No_constructor ty) ->
+    Some
+      (Report.errorf "The type %a doesn't have any constructors."
+         pp ty)
   | _ -> None
 
 let () =
@@ -70,6 +75,31 @@ module Subst = struct
       TConstructor { constructor; arguments }
 
 end
+
+let rec get_definition_with_subst tyenv subst ty = 
+  match ty with
+  | TVar name ->
+    let ty = Subst.var subst name in
+    get_definition_with_subst tyenv subst ty
+  | TInt -> error @@ No_constructor ty
+  | TConstructor { constructor = type_name ; arguments } ->
+    let { name = _ ; parameters ; definition } = Env.get type_name tyenv in
+    let subst =
+      let f e name ty = Name.Map.add name ty e in
+      List.fold_left2 f subst parameters arguments
+    in
+    begin
+      match definition with
+      | Sum constrs ->
+        let f { constructor ; arguments } =
+          List.mapi
+            (fun i ty -> constructor, i, Subst.type_expr subst ty)
+            arguments
+        in
+        CCList.flat_map f constrs
+    end
+
+let get_definition tyenv ty = get_definition_with_subst tyenv Subst.empty ty
 
 let rec instantiate_data_constructor_with_subst tyenv subst constructor ty =
   match ty with
