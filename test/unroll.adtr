@@ -4,24 +4,6 @@ erase1 (x:t) : t = rewrite x {
   | Node(Node (x, a),b) -> x
 }
 (*EXPECT
-Info Rewrite: .Node-0.Node-0 ⋈ [] = .Node-0.Node-0
-
-Info Rewrite: Movement:.Node-0.Node-0
-              Cell:[[]; .Node-0]
-              Moves:[.Node-1/t; .Node-0.Node-1/t]
-
-Info Rewrite: .Node-0.Node-0(.Node-0.Node-0)^k2.Node-1 ⋈ (.Node-0.Node-0)^k2.Node-1 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-0.Node-0(.Node-0.Node-0)^k2.Node-0.Node-1 ⋈ (.Node-0.Node-0)^k2.Node-0.Node-1 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
 erase1 (x : t) : t = rewrite x {
   | (a:t -- Layer(k0,.Node-0.Node-1) → ø)
     (b:t -- Layer(k1,.Node-1) → ø)
@@ -35,24 +17,6 @@ erase2 (x:t) : t = rewrite x {
   | Node(Node (Node(x1,x2), a),b) -> Node(x1,x2)
 }
 (*EXPECT
-
-Info Rewrite: .Node-0.Node-0.Node-0 ⋈ .Node-0 = .Node-0.Node-0
-
-Info Rewrite: Movement:.Node-0.Node-0
-              Cell:[[]; .Node-0]
-              Moves:[.Node-1/t; .Node-0.Node-1/t]
-
-Info Rewrite: .Node-0.Node-0.Node-0(.Node-0.Node-0)^k7.Node-1 ⋈ .Node-0(.Node-0.Node-0)^k7.Node-1 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-0.Node-0.Node-0(.Node-0.Node-0)^k7.Node-0.Node-1 ⋈ .Node-0(.Node-0.Node-0)^k7.Node-0.Node-1 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
 
 erase2 (x : t) : t = rewrite x {
   | (a:t -- Layer(k5,.Node-0.Node-1) → ø)
@@ -68,24 +32,6 @@ erase3 (x:t) : t = rewrite x {
   | Node(Node (Node(Node(x1,x2),x3), a),b) -> Node(Node(x1,x2),x3)
 }
 (*EXPECT
-
-Info Rewrite: .Node-0.Node-0.Node-0.Node-0 ⋈ .Node-0.Node-0 = .Node-0.Node-0
-
-Info Rewrite: Movement:.Node-0.Node-0
-              Cell:[[]; .Node-0]
-              Moves:[.Node-1/t; .Node-0.Node-1/t]
-
-Info Rewrite: .Node-0.Node-0.Node-0.Node-0(.Node-0.Node-0)^k13.Node-1 ⋈ .Node-0.Node-0(.Node-0.Node-0)^k13.Node-1 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-0.Node-0.Node-0.Node-0(.Node-0.Node-0)^k13.Node-0.Node-1 ⋈ .Node-0.Node-0(.Node-0.Node-0)^k13.Node-0.Node-1 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
 
 erase3 (x : t) : t = rewrite x {
   | (a:t -- Layer(k11,.Node-0.Node-1) → ø)

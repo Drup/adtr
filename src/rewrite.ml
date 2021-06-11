@@ -118,21 +118,21 @@ let cursor2mem tyenv r =
     else
       match conflict src dest with
       | Some (_, vector) ->
-        Report.infof "Rewrite"
-          "@[%a ⋈ %a = %a@]@."
-          (pp_position Cursor.pp) src
-          (pp_position Cursor.pp) dest
-          Cursor.pp vector;
+        (* Report.infof "Rewrite"
+         *   "@[%a ⋈ %a = %a@]@."
+         *   (pp_position Cursor.pp) src
+         *   (pp_position Cursor.pp) dest
+         *   Cursor.pp vector; *)
         let k = Name.fresh "k" in
         let middle_path = [`Multiple (k, vector)] in
         let cell_suffixes, cursor_suffixes =
           complement_path tyenv ty vector
         in
-        Report.infof "Rewrite"
-          "@[<v>Movement:%a@,Cell:%a@,Moves:%a@]@."
-          Cursor.pp vector
-          Fmt.(box @@ Dump.list Cursor.pp) cell_suffixes
-          Fmt.(box @@ Dump.list @@ (fun fmt (p,c) -> Fmt.pf fmt "%a/%a" Cursor.pp p Types.pp c)) cursor_suffixes;
+        (* Report.infof "Rewrite"
+         *   "@[<v>Movement:%a@,Cell:%a@,Moves:%a@]@."
+         *   Cursor.pp vector
+         *   Fmt.(box @@ Dump.list Cursor.pp) cell_suffixes
+         *   Fmt.(box @@ Dump.list @@ (fun fmt (p,c) -> Fmt.pf fmt "%a/%a" Cursor.pp p Types.pp c)) cursor_suffixes; *)
         let cell_moves =
           let mk_move suff =
             let f =

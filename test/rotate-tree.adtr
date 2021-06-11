@@ -8,60 +8,6 @@ rotate (t:tree) : tree = rewrite t {
     Node (Node(a,i1,b),i2,Node(c,i3,d))
 }
 (*EXPECT
-Info Rewrite: .Node-0.Node-0 ⋈ .Node-0.Node-0 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-0.Node-2.Node-0 ⋈ .Node-0.Node-2 = .Node-0
-
-Info Rewrite: Movement:.Node-0
-              Cell:[[]]
-              Moves:[.Leaf-0/int; .Node-1/int; .Node-2/tree]
-
-Info Rewrite: .Node-0.Node-2.Node-0.Node-0^k1.Node-2 ⋈ .Node-0.Node-2.Node-0^k1.Node-2 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-2 ⋈ .Node-2.Node-2 = .Node-2
-
-Info Rewrite: Movement:.Node-2
-              Cell:[[]]
-              Moves:[.Leaf-0/int; .Node-0/tree; .Node-1/int]
-
-Info Rewrite: .Node-2.Node-2^k4.Node-0 ⋈ .Node-2.Node-2.Node-2^k4.Node-0 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-0.Node-0.Node-0 ⋈ .Node-0.Node-0 = .Node-0
-
-Info Rewrite: Movement:.Node-0
-              Cell:[[]]
-              Moves:[.Leaf-0/int; .Node-1/int; .Node-2/tree]
-
-Info Rewrite: .Node-0.Node-0.Node-0.Node-0^k6.Node-2 ⋈ .Node-0.Node-0.Node-0^k6.Node-2 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
-Info Rewrite: .Node-2 ⋈ .Node-2.Node-2 = .Node-2
-
-Info Rewrite: Movement:.Node-2
-              Cell:[[]]
-              Moves:[.Leaf-0/int; .Node-0/tree; .Node-1/int]
-
-Info Rewrite: .Node-2.Node-2^k10.Node-0 ⋈ .Node-2.Node-2.Node-2^k10.Node-0 = []
-
-Info Rewrite: Movement:[]
-              Cell:[]
-              Moves:[]
-
 rotate (t : tree) : tree = rewrite t {
   | (i:int -- Cell(.Leaf-0) → Cell(.Leaf-0))
   | (b[]:tree -- Cell(.Node-0.Node-2.Node-0.Node-0^k1) → Cell(.Node-0.Node-2.Node-0^k1))
