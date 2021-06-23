@@ -45,7 +45,8 @@ let pp pp_mem fmt
     { f; parameters; return_ty; discriminant; discriminant_ty; clauses } =
   Fmt.pf fmt "@[<v>@[<v2>@[%a@ (%a)@ : %a@ = rewrite %a @]{@ %a@]@ }@]"
     Name.pp f
-    (Fmt.list @@ Fmt.pair ~sep:(Fmt.unit " : ") Name.pp Types.pp) parameters
+    (Fmt.list ~sep:(Fmt.unit ", ") @@
+     Fmt.pair ~sep:(Fmt.unit " : ") Name.pp Types.pp) parameters
     Types.pp return_ty
     Name.pp discriminant
     (Fmt.vbox @@ Fmt.list @@ Fmt.prefix (Fmt.unit "| ") @@ pp_clause pp_mem)

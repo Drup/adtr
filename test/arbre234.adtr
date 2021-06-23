@@ -7,7 +7,7 @@ add (tree: t, newt: t) : t = rewrite tree {
     Node4(t1,t2,t3,Node2(t4,newt))
 }
 (*EXPECT
-add (tree : tnewt : t) : t = rewrite tree {
+add (tree : t, newt : t) : t = rewrite tree {
   | (newt:t | x → .t@2.φ^k0)
   | (newt:t | x → .t@3.φ^k3)
   | (newt:t | x → .t@3.t@1.φ^k7)
