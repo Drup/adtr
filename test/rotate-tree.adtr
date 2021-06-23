@@ -9,58 +9,44 @@ rotate (t:tree) : tree = rewrite t {
 }
 (*EXPECT
 rotate (t : tree) : tree = rewrite t {
-  | (i:int | Cell(.int@0) → Cell(.int@0))
-  | (b[]:tree |
-     Cell(.tree@0.tree@2.tree@0^(k1 + 1)) →
-     Cell(.tree@0.tree@2.tree@0^k1))
+  | (i:int | .int@0 → .int@0)
+  | (b[]:tree | .tree@0.tree@2.tree@0^(k1 + 1) → .tree@0.tree@2.tree@0^k1)
     (b.int@0:int |
-     Cell(.tree@0.tree@2.tree@0^(k1 + 1).int@0) →
-     Cell(.tree@0.tree@2.tree@0^k1.int@0))
+     .tree@0.tree@2.tree@0^(k1 + 1).int@0 →
+     .tree@0.tree@2.tree@0^k1.int@0)
     (b.int@1:int |
-     Cell(.tree@0.tree@2.tree@0^(k1 + 1).int@1) →
-     Cell(.tree@0.tree@2.tree@0^k1.int@1))
+     .tree@0.tree@2.tree@0^(k1 + 1).int@1 →
+     .tree@0.tree@2.tree@0^k1.int@1)
     (b.tree@2:tree |
-     Layer(k2,.tree@0.tree@2.tree@0^(k1 + 1).tree@2) →
-     Layer(k2,.tree@0.tree@2.tree@0^k1.tree@2))
-    (c:tree | Layer(k3,.tree@0.tree@2.tree@2) → Layer(k3,.tree@2.tree@0))
-    (d[]:tree | Cell(.tree@2^(k4 + 1)) → Cell(.tree@2^(k4 + 2)))
-    (d.int@0:int |
-     Cell(.tree@2^(k4 + 1).int@0) →
-     Cell(.tree@2^(k4 + 2).int@0))
-    (d.int@1:int |
-     Cell(.tree@2^(k4 + 1).int@1) →
-     Cell(.tree@2^(k4 + 2).int@1))
+     .tree@0.tree@2.tree@0^(k1 + 1).tree@2.φ^k2 →
+     .tree@0.tree@2.tree@0^k1.tree@2.φ^k2)
+    (c:tree | .tree@0.tree@2.tree@2.φ^k3 → .tree@2.tree@0.φ^k3)
+    (d[]:tree | .tree@2^(k4 + 1) → .tree@2^(k4 + 2))
+    (d.int@0:int | .tree@2^(k4 + 1).int@0 → .tree@2^(k4 + 2).int@0)
+    (d.int@1:int | .tree@2^(k4 + 1).int@1 → .tree@2^(k4 + 2).int@1)
     (d.tree@0:tree |
-     Layer(k5,.tree@2^(k4 + 1).tree@0) →
-     Layer(k5,.tree@2^(k4 + 2).tree@0))
-    (i1:int | Cell(.tree@0.int@1) → Cell(.tree@0.int@1))
-    (i2:int | Cell(.tree@0.tree@2.int@1) → Cell(.int@1))
-    (i3:int | Cell(.int@1) → Cell(.tree@2.int@1))
-  | (a[]:tree | Cell(.tree@0^(k6 + 3)) → Cell(.tree@0^(k6 + 2)))
-    (a.int@0:int |
-     Cell(.tree@0^(k6 + 3).int@0) →
-     Cell(.tree@0^(k6 + 2).int@0))
-    (a.int@1:int |
-     Cell(.tree@0^(k6 + 3).int@1) →
-     Cell(.tree@0^(k6 + 2).int@1))
+     .tree@2^(k4 + 1).tree@0.φ^k5 →
+     .tree@2^(k4 + 2).tree@0.φ^k5)
+    (i1:int | .tree@0.int@1 → .tree@0.int@1)
+    (i2:int | .tree@0.tree@2.int@1 → .int@1)
+    (i3:int | .int@1 → .tree@2.int@1)
+  | (a[]:tree | .tree@0^(k6 + 3) → .tree@0^(k6 + 2))
+    (a.int@0:int | .tree@0^(k6 + 3).int@0 → .tree@0^(k6 + 2).int@0)
+    (a.int@1:int | .tree@0^(k6 + 3).int@1 → .tree@0^(k6 + 2).int@1)
     (a.tree@2:tree |
-     Layer(k7,.tree@0^(k6 + 3).tree@2) →
-     Layer(k7,.tree@0^(k6 + 2).tree@2))
-    (b:tree | Layer(k8,.tree@0.tree@0.tree@2) → Layer(k8,.tree@0.tree@2))
-    (c:tree | Layer(k9,.tree@0.tree@2) → Layer(k9,.tree@2.tree@0))
-    (d[]:tree | Cell(.tree@2^(k10 + 1)) → Cell(.tree@2^(k10 + 2)))
-    (d.int@0:int |
-     Cell(.tree@2^(k10 + 1).int@0) →
-     Cell(.tree@2^(k10 + 2).int@0))
-    (d.int@1:int |
-     Cell(.tree@2^(k10 + 1).int@1) →
-     Cell(.tree@2^(k10 + 2).int@1))
+     .tree@0^(k6 + 3).tree@2.φ^k7 →
+     .tree@0^(k6 + 2).tree@2.φ^k7)
+    (b:tree | .tree@0.tree@0.tree@2.φ^k8 → .tree@0.tree@2.φ^k8)
+    (c:tree | .tree@0.tree@2.φ^k9 → .tree@2.tree@0.φ^k9)
+    (d[]:tree | .tree@2^(k10 + 1) → .tree@2^(k10 + 2))
+    (d.int@0:int | .tree@2^(k10 + 1).int@0 → .tree@2^(k10 + 2).int@0)
+    (d.int@1:int | .tree@2^(k10 + 1).int@1 → .tree@2^(k10 + 2).int@1)
     (d.tree@0:tree |
-     Layer(k11,.tree@2^(k10 + 1).tree@0) →
-     Layer(k11,.tree@2^(k10 + 2).tree@0))
-    (i1:int | Cell(.tree@0.tree@0.int@1) → Cell(.tree@0.int@1))
-    (i2:int | Cell(.tree@0.int@1) → Cell(.int@1))
-    (i3:int | Cell(.int@1) → Cell(.tree@2.int@1))
+     .tree@2^(k10 + 1).tree@0.φ^k11 →
+     .tree@2^(k10 + 2).tree@0.φ^k11)
+    (i1:int | .tree@0.tree@0.int@1 → .tree@0.int@1)
+    (i2:int | .tree@0.int@1 → .int@1)
+    (i3:int | .int@1 → .tree@2.int@1)
 }
 
 *)

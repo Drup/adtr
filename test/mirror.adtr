@@ -6,10 +6,10 @@ mirror (t:tree) : tree = rewrite t {
 }
 (*EXPECT
 mirror (t : tree) : tree = rewrite t {
-  | (i:int | Cell(.int@0) → Cell(.int@0))
-  | (a:tree | Layer(k0,.tree@0) → Layer(k0,.tree@2))
-    (b:tree | Layer(k1,.tree@2) → Layer(k1,.tree@0))
-    (i:int | Cell(.int@1) → Cell(.int@1))
+  | (i:int | .int@0 → .int@0)
+  | (a:tree | .tree@0.φ^k0 → .tree@2.φ^k0)
+    (b:tree | .tree@2.φ^k1 → .tree@0.φ^k1)
+    (i:int | .int@1 → .int@1)
 }
 
 *)
@@ -21,12 +21,12 @@ mirror2 (t:tree) : tree = rewrite t {
 (*EXPECT
 
 mirror2 (t : tree) : tree = rewrite t {
-  | (i:int | Cell(.int@0) → Cell(.int@0))
-  | (a:tree | Layer(k2,.tree@0) → Layer(k2,.tree@2))
-    (b1:tree | Layer(k3,.tree@2.tree@0) → Layer(k3,.tree@0.tree@2))
-    (b2:tree | Layer(k4,.tree@2.tree@2) → Layer(k4,.tree@0.tree@0))
-    (i:int | Cell(.int@1) → Cell(.int@1))
-    (j:int | Cell(.tree@2.int@1) → Cell(.tree@0.int@1))
+  | (i:int | .int@0 → .int@0)
+  | (a:tree | .tree@0.φ^k2 → .tree@2.φ^k2)
+    (b1:tree | .tree@2.tree@0.φ^k3 → .tree@0.tree@2.φ^k3)
+    (b2:tree | .tree@2.tree@2.φ^k4 → .tree@0.tree@0.φ^k4)
+    (i:int | .int@1 → .int@1)
+    (j:int | .tree@2.int@1 → .tree@0.int@1)
 }
 
 *)
@@ -39,14 +39,14 @@ mirror3 (t:tree) : tree = rewrite t {
 (*EXPECT
 
 mirror3 (t : tree) : tree = rewrite t {
-  | (i:int | Cell(.int@0) → Cell(.int@0))
-  | (a1:tree | Layer(k5,.tree@0.tree@0) → Layer(k5,.tree@2.tree@2))
-    (a2:tree | Layer(k6,.tree@0.tree@2) → Layer(k6,.tree@2.tree@0))
-    (b1:tree | Layer(k7,.tree@2.tree@0) → Layer(k7,.tree@0.tree@2))
-    (b2:tree | Layer(k8,.tree@2.tree@2) → Layer(k8,.tree@0.tree@0))
-    (i:int | Cell(.int@1) → Cell(.int@1))
-    (ia:int | Cell(.tree@0.int@1) → Cell(.tree@2.int@1))
-    (ib:int | Cell(.tree@2.int@1) → Cell(.tree@0.int@1))
+  | (i:int | .int@0 → .int@0)
+  | (a1:tree | .tree@0.tree@0.φ^k5 → .tree@2.tree@2.φ^k5)
+    (a2:tree | .tree@0.tree@2.φ^k6 → .tree@2.tree@0.φ^k6)
+    (b1:tree | .tree@2.tree@0.φ^k7 → .tree@0.tree@2.φ^k7)
+    (b2:tree | .tree@2.tree@2.φ^k8 → .tree@0.tree@0.φ^k8)
+    (i:int | .int@1 → .int@1)
+    (ia:int | .tree@0.int@1 → .tree@2.int@1)
+    (ib:int | .tree@2.int@1 → .tree@0.int@1)
 }
 
 *)
@@ -60,10 +60,10 @@ mirror (t:tree3) : tree3 = rewrite t {
 (*EXPECT
 
 mirror (t : tree3) : tree3 = rewrite t {
-  | (i:int | Cell(.int@0) → Cell(.int@0))
-  | (a:tree | Layer(k9,.tree@0) → Layer(k9,.tree@1))
-    (b:tree | Layer(k10,.tree@1) → Layer(k10,.tree@2))
-    (c:tree | Layer(k11,.tree@2) → Layer(k11,.tree@0))
+  | (i:int | .int@0 → .int@0)
+  | (a:tree | .tree@0.φ^k9 → .tree@1.φ^k9)
+    (b:tree | .tree@1.φ^k10 → .tree@2.φ^k10)
+    (c:tree | .tree@2.φ^k11 → .tree@0.φ^k11)
 }
 
 *)

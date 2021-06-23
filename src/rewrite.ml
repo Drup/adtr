@@ -55,27 +55,19 @@ let pp pp_mem fmt
 
 module Mem = struct
 
-  type t =
-    | Cell of Cursor.path
-    | Layer of Name.t * Cursor.path
-  let pp fmt = function
-    | Cell p -> Fmt.pf fmt "Cell(%a)" Cursor.pp_path p
-    | Layer (k,p) -> Fmt.pf fmt "Layer(%a,%a)" Name.pp k Cursor.pp_path p
+  type t = Cursor.path
+  let pp = Cursor.pp_path
 
   let conflict mem1 mem2 =
-    match mem1, mem2 with
-    | Cell p1, Cell p2 -> if Cursor.overlap p1 p2 then Some Cursor.empty else None
-    | Layer (_, p1), Layer (_, p2) ->
-      if Cursor.overlap p1 p2 then Some Cursor.empty else None
-    | _ -> None
+    if Cursor.overlap mem1 mem2 then Some Cursor.empty else None
 end
 
 let map_position f = function
   | Internal x -> Internal (f x)
   | Absent -> Absent
   | External -> External
-let cell p = Mem.Cell (Cursor.as_path p)
-let layer k p = Mem.Layer(k,Cursor.as_path p)
+let cell p = Cursor.as_path p
+let layer k p = Cursor.(as_path p ++ [`Any k])
 
 let conflict pos1 pos2 = match pos1, pos2 with
   | Internal p1, Internal p2 -> Cursor.conflict p1 p2
@@ -110,7 +102,7 @@ let cursor2mem tyenv (r : Cursor.fields t) =
     if Types.is_scalar ty then
       transl_movement_scalar { name ; ty ; src ; dest }
     else
-      let k = Name.fresh "k" in
+      let k = Index.var @@ Name.fresh "k" in
       let src = map_position (layer k) src in
       let dest = map_position (layer k) dest in
       [{name ; ty ; src ; dest}]

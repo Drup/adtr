@@ -14,9 +14,9 @@ let rec conflict (p1:fields) (p2:fields) = match p1, p2 with
     if x1 = x2 then conflict t1 t2
     else None
 
-
 type down = [
   | field
+  | `Any of Index.t
   | `Multiple of Index.t * fields
 ]
 and path = down list
@@ -36,9 +36,9 @@ let simplify (p : path) =
     in
     take_prefix l prefix l
   in
-  let rec split_at_first_multiple (before_rev : fields) = function
+  let rec split_at_first_multiple before_rev = function
     | [] -> `No_multiple (List.rev before_rev)
-    | `Down _ as f :: after ->
+    | (`Down _ | `Any _)  as f :: after ->
       split_at_first_multiple (f :: before_rev) after
     | `Multiple _ as f :: after ->
       `Some_multiple (before_rev, f, after)
@@ -48,16 +48,17 @@ let simplify (p : path) =
     | `No_multiple l ->
       as_path l
     | `Some_multiple (before_rev, `Multiple (k,l), after) ->
+      let mov = as_path l in
       let i, rest_before =
-        count_times_prefix_and_split ~prefix:(List.rev l) before_rev
+        count_times_prefix_and_split ~prefix:(List.rev mov) before_rev
       in
       let j, rest_after =
         match split_at_first_multiple [] after with
         | `No_multiple after ->
-          (count_times_prefix_and_split ~prefix:l after :> _ * path)
+          count_times_prefix_and_split ~prefix:mov after
         | `Some_multiple (after1, f, after2) ->
-          let j, after1 = count_times_prefix_and_split ~prefix:l after1 in
-          j, as_path after1 @ f :: after2
+          let j, after1 = count_times_prefix_and_split ~prefix:mov after1 in
+          j, after1 @ f :: after2
       in
       let k = Index.(k + const i + const j) in
       as_path (List.rev rest_before)
@@ -76,9 +77,11 @@ let empty = []
 
 let rec overlap (p1:path) (p2:path) = match p1, p2 with
   | [], [] -> true
-  | `Down _ :: _, []
-  | [], `Down _ :: _ -> false
+  | (`Down _ | `Any _) :: _, []
+  | [], (`Down _ | `Any _) :: _ -> false
   | `Multiple _p1 :: t1, `Multiple _p2 :: t2 ->
+    overlap t1 t2
+  | `Any _::t1, _::t2 | _::t1, `Any _::t2 ->
     overlap t1 t2
   | (`Down x1)::t1, (`Down x2)::t2 ->
     x1 = x2 && overlap t1 t2
@@ -97,11 +100,12 @@ let rec overlap (p1:path) (p2:path) = match p1, p2 with
 
 let rec pp_path fmt (c: path) = match c with
   | [] -> ()
-  | `Down (constr,i) :: t -> Fmt.pf fmt ".%a@%i" Types.pp constr i; pp_path fmt t
-  | `Multiple (i, ([_] as path)) :: t ->
-    Fmt.pf fmt "%a^%a" pp_path (path :> path) Index.pp_parens i; pp_path fmt t
-  | `Multiple (i, path) :: t ->
-    Fmt.pf fmt "(%a)^%a" pp_path (path :> path) Index.pp_parens i; pp_path fmt t
+  | `Down (ty,i) :: t -> Fmt.pf fmt ".%a@%i" Types.pp ty i; pp_path fmt t
+  | `Any k :: t -> Fmt.pf fmt ".φ^%a" Index.pp_parens k; pp_path fmt t
+  | `Multiple (k, ([_] as path)) :: t ->
+    Fmt.pf fmt "%a^%a" pp_path (path :> path) Index.pp_parens k; pp_path fmt t
+  | `Multiple (k, path) :: t ->
+    Fmt.pf fmt "(%a)^%a" pp_path (path :> path) Index.pp_parens k; pp_path fmt t
 
 let pp_path fmt = function
   | [] -> Fmt.pf fmt "[]"
