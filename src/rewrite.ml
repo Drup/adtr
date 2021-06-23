@@ -36,7 +36,7 @@ let pp_position pp_mem fmt = function
 
 let pp_clause pp_mem =
   let pp_def fmt { name ; src ; dest ; ty } =
-    Fmt.pf fmt "(%s:%a -- %a → %a)"
+    Fmt.pf fmt "@[<h>(%s:%a --@ @[<h>%a@] →@ @[<h>%a@])@]"
       name Types.pp ty (pp_position pp_mem) src (pp_position pp_mem) dest
   in
   Fmt.vbox @@ Fmt.list pp_def
@@ -141,7 +141,7 @@ let cursor2mem tyenv (r : Cursor.fields t) =
             let suff = Cursor.as_path suff in
             let f =
               map_position
-                (fun pref -> cell (Cursor.as_path pref @ middle_path @ suff))
+                (fun pref -> cell Cursor.(as_path pref ++ middle_path ++ suff))
             in
             let name = Fmt.strf "%s%a" name Cursor.pp_path suff in
             let src = f src in
@@ -155,7 +155,7 @@ let cursor2mem tyenv (r : Cursor.fields t) =
             let suff = Cursor.as_path suff in
             let f =
               map_position
-                (fun pref -> Cursor.as_path pref @ middle_path @ suff)
+                (fun pref -> Cursor.(as_path pref ++ middle_path ++ suff))
             in
             let name = Fmt.strf "%s%a" name Cursor.pp_path suff in
             let src = f src in

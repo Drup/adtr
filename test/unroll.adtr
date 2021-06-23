@@ -7,10 +7,10 @@ erase1 (x:t) : t = rewrite x {
 erase1 (x : t) : t = rewrite x {
   | (a:t -- Layer(k0,.t@0.t@1) → ø)
     (b:t -- Layer(k1,.t@1) → ø)
-    (x[]:t -- Cell(.t@0.t@0(.t@0.t@0)^k2) → Cell((.t@0.t@0)^k2))
-    (x.t@0:t -- Cell(.t@0.t@0(.t@0.t@0)^k2.t@0) → Cell((.t@0.t@0)^k2.t@0))
-    (x.t@1:t -- Layer(k3,.t@0.t@0(.t@0.t@0)^k2.t@1) → Layer(k3,(.t@0.t@0)^k2.t@1))
-    (x.t@0.t@1:t -- Layer(k4,.t@0.t@0(.t@0.t@0)^k2.t@0.t@1) → Layer(k4,(.t@0.t@0)^k2.t@0.t@1))
+    (x[]:t -- Cell((.t@0.t@0)^(k2 + 1)) → Cell((.t@0.t@0)^k2))
+    (x.t@0:t -- Cell((.t@0.t@0)^(k2 + 1).t@0) → Cell((.t@0.t@0)^k2.t@0))
+    (x.t@1:t -- Layer(k3,(.t@0.t@0)^(k2 + 1).t@1) → Layer(k3,(.t@0.t@0)^k2.t@1))
+    (x.t@0.t@1:t -- Layer(k4,(.t@0.t@0)^(k2 + 1).t@0.t@1) → Layer(k4,(.t@0.t@0)^k2.t@0.t@1))
 }
 
 *)
@@ -23,10 +23,10 @@ erase2 (x:t) : t = rewrite x {
 erase2 (x : t) : t = rewrite x {
   | (a:t -- Layer(k5,.t@0.t@1) → ø)
     (b:t -- Layer(k6,.t@1) → ø)
-    (x1[]:t -- Cell(.t@0.t@0.t@0(.t@0.t@0)^k7) → Cell(.t@0(.t@0.t@0)^k7))
-    (x1.t@0:t -- Cell(.t@0.t@0.t@0(.t@0.t@0)^k7.t@0) → Cell(.t@0(.t@0.t@0)^k7.t@0))
-    (x1.t@1:t -- Layer(k8,.t@0.t@0.t@0(.t@0.t@0)^k7.t@1) → Layer(k8,.t@0(.t@0.t@0)^k7.t@1))
-    (x1.t@0.t@1:t -- Layer(k9,.t@0.t@0.t@0(.t@0.t@0)^k7.t@0.t@1) → Layer(k9,.t@0(.t@0.t@0)^k7.t@0.t@1))
+    (x1[]:t -- Cell(.t@0(.t@0.t@0)^(k7 + 1)) → Cell(.t@0(.t@0.t@0)^k7))
+    (x1.t@0:t -- Cell(.t@0(.t@0.t@0)^(k7 + 1).t@0) → Cell(.t@0(.t@0.t@0)^k7.t@0))
+    (x1.t@1:t -- Layer(k8,.t@0(.t@0.t@0)^(k7 + 1).t@1) → Layer(k8,.t@0(.t@0.t@0)^k7.t@1))
+    (x1.t@0.t@1:t -- Layer(k9,.t@0(.t@0.t@0)^(k7 + 1).t@0.t@1) → Layer(k9,.t@0(.t@0.t@0)^k7.t@0.t@1))
     (x2:t -- Layer(k10,.t@0.t@0.t@1) → Layer(k10,.t@1))
 }
 
@@ -40,10 +40,10 @@ erase3 (x:t) : t = rewrite x {
 erase3 (x : t) : t = rewrite x {
   | (a:t -- Layer(k11,.t@0.t@1) → ø)
     (b:t -- Layer(k12,.t@1) → ø)
-    (x1[]:t -- Cell(.t@0.t@0.t@0.t@0(.t@0.t@0)^k13) → Cell(.t@0.t@0(.t@0.t@0)^k13))
-    (x1.t@0:t -- Cell(.t@0.t@0.t@0.t@0(.t@0.t@0)^k13.t@0) → Cell(.t@0.t@0(.t@0.t@0)^k13.t@0))
-    (x1.t@1:t -- Layer(k14,.t@0.t@0.t@0.t@0(.t@0.t@0)^k13.t@1) → Layer(k14,.t@0.t@0(.t@0.t@0)^k13.t@1))
-    (x1.t@0.t@1:t -- Layer(k15,.t@0.t@0.t@0.t@0(.t@0.t@0)^k13.t@0.t@1) → Layer(k15,.t@0.t@0(.t@0.t@0)^k13.t@0.t@1))
+    (x1[]:t -- Cell((.t@0.t@0)^(k13 + 2)) → Cell((.t@0.t@0)^(k13 + 1)))
+    (x1.t@0:t -- Cell((.t@0.t@0)^(k13 + 2).t@0) → Cell((.t@0.t@0)^(k13 + 1).t@0))
+    (x1.t@1:t -- Layer(k14,(.t@0.t@0)^(k13 + 2).t@1) → Layer(k14,(.t@0.t@0)^(k13 + 1).t@1))
+    (x1.t@0.t@1:t -- Layer(k15,(.t@0.t@0)^(k13 + 2).t@0.t@1) → Layer(k15,(.t@0.t@0)^(k13 + 1).t@0.t@1))
     (x2:t -- Layer(k16,.t@0.t@0.t@0.t@1) → Layer(k16,.t@0.t@1))
     (x3:t -- Layer(k17,.t@0.t@0.t@1) → Layer(k17,.t@1))
 }

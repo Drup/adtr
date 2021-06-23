@@ -10,7 +10,14 @@ let rec simplify = function
 
 and sum l0 = 
   let rec aux ~constant ~others = function
-    | [] -> Sum (Constant constant :: others)
+    | [] ->
+      if constant = 0 then
+        begin match others with
+          | [e] -> e
+          | l -> Sum l
+        end
+      else
+        Sum (others @ [Constant constant])
     | h :: t ->
       begin match simplify h with
         | Var _ as e ->
@@ -39,6 +46,6 @@ let rec pp fmt = function
   | Var n -> Name.pp fmt n
   | Constant i -> Fmt.int fmt i
   | Sum l ->
-    Fmt.(box @@ list ~sep:(unit "@ + ") pp_parens) fmt l
+    Fmt.(hbox @@ list ~sep:(unit "@ + ") pp_parens) fmt l
 and pp_parens fmt x = if need_parens x then Fmt.parens pp fmt x else pp fmt x
     
