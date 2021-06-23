@@ -36,7 +36,7 @@ let pp_position pp_mem fmt = function
 
 let pp_clause pp_mem =
   let pp_def fmt { name ; src ; dest ; ty } =
-    Fmt.pf fmt "@[<h>(%s:%a --@ @[<h>%a@] →@ @[<h>%a@])@]"
+    Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] →@ @[<h>%a@])@]"
       name Types.pp ty (pp_position pp_mem) src (pp_position pp_mem) dest
   in
   Fmt.vbox @@ Fmt.list pp_def
