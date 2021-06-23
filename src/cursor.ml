@@ -81,8 +81,8 @@ let rec overlap (p1:path) (p2:path) = match p1, p2 with
 
 let rec pp_cursor fmt (c: cursor) = match c with
   | [] -> ()
-  | `Up (constr,i) :: t -> Fmt.pf fmt "↑%i" i; pp_cursor fmt t
-  | `Down (constr,i) :: t -> Fmt.pf fmt ".%i" i; pp_cursor fmt t
+  | `Up (constr,i) :: t -> Fmt.pf fmt "↑(%a-%i)" Name.pp constr i; pp_cursor fmt t
+  | `Down (constr,i) :: t -> Fmt.pf fmt ".%a-%i" Name.pp constr i; pp_cursor fmt t
   | `Multiple (i, ([_] as path)) :: t ->
     Fmt.pf fmt "%a^%a" pp_cursor path Index.pp_parens i; pp_cursor fmt t
   | `Multiple (i, path) :: t ->
