@@ -1,10 +1,10 @@
 type field = [
-  | `Down of Name.t * int
+  | `Down of Syntax.type_expr * int
 ]
 type fields = field list
 
 type down = [
-  | `Down of Name.t * int
+  | `Down of Syntax.type_expr * int
   | `Multiple of Index.t * fields
 ]
 and path = down list
@@ -54,7 +54,7 @@ let rec overlap (p1:path) (p2:path) = match p1, p2 with
 
 let rec pp_path fmt (c: path) = match c with
   | [] -> ()
-  | `Down (constr,i) :: t -> Fmt.pf fmt ".%a-%i" Name.pp constr i; pp_path fmt t
+  | `Down (constr,i) :: t -> Fmt.pf fmt ".%a@%i" Types.pp constr i; pp_path fmt t
   | `Multiple (i, ([_] as path)) :: t ->
     Fmt.pf fmt "%a^%a" pp_path (path :> path) Index.pp_parens i; pp_path fmt t
   | `Multiple (i, path) :: t ->

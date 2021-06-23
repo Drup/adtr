@@ -44,7 +44,7 @@ let type_pattern tyenv posmap0 pattern0 pat_ty0 =
       in
       CCList.foldi2
         (fun env i pattern pat_ty ->
-           aux env Cursor.(path +/ down constructor i) pattern pat_ty)
+           aux env Cursor.(path +/ down pat_ty i) pattern pat_ty)
         posmap arguments argument_tys
   in
   aux posmap0 Cursor.empty pattern0 pat_ty0
@@ -63,7 +63,7 @@ let type_expression tyenv env posmap0 expr0 expr_ty0 =
       in
       CCList.foldi2
         (fun env i expr expr_ty ->
-           aux env Cursor.(path +/ down constructor i) expr expr_ty)
+           aux env Cursor.(path +/ down expr_ty i) expr expr_ty)
         posmap arguments argument_tys
   in
   aux posmap0 Cursor.empty expr0 expr_ty0

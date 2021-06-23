@@ -8,24 +8,14 @@ add (tree: t, newt: t) : t = rewrite tree {
 }
 (*EXPECT
 add (tree : tnewt : t) : t = rewrite tree {
-  | (newt:t -- x → Layer(k0,.Node3-2))
-    (t1:t -- Layer(k1,.Node2-0) → Layer(k1,.Node3-0))
-    (t2:t -- Layer(k2,.Node2-1) → Layer(k2,.Node3-1))
-  | (newt:t -- x → Layer(k3,.Node4-3))
-    (t1:t -- Layer(k4,.Node3-0) → Layer(k4,.Node4-0))
-    (t2:t -- Layer(k5,.Node3-1) → Layer(k5,.Node4-1))
-    (t3:t -- Layer(k6,.Node3-2) → Layer(k6,.Node4-2))
-  | (newt:t -- x → Layer(k7,.Node4-3.Node2-1))
-    (t4[]:t -- Cell(.Node4-3.Node2-0^k11) → Cell(.Node4-3.Node2-0.Node2-0^k11))
-    (t4.Node3-0:t -- Cell(.Node4-3.Node2-0^k11.Node3-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Node3-0))
-    (t4.Node4-0:t -- Cell(.Node4-3.Node2-0^k11.Node4-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Node4-0))
-    (t4.Leaf-0:int -- Cell(.Node4-3.Node2-0^k11.Leaf-0) → Cell(.Node4-3.Node2-0.Node2-0^k11.Leaf-0))
-    (t4.Node2-1:t -- Layer(k12,.Node4-3.Node2-0^k11.Node2-1) → Layer(k12,.Node4-3.Node2-0.Node2-0^k11.Node2-1))
-    (t4.Node3-1:t -- Layer(k13,.Node4-3.Node2-0^k11.Node3-1) → Layer(k13,.Node4-3.Node2-0.Node2-0^k11.Node3-1))
-    (t4.Node3-2:t -- Layer(k14,.Node4-3.Node2-0^k11.Node3-2) → Layer(k14,.Node4-3.Node2-0.Node2-0^k11.Node3-2))
-    (t4.Node4-1:t -- Layer(k15,.Node4-3.Node2-0^k11.Node4-1) → Layer(k15,.Node4-3.Node2-0.Node2-0^k11.Node4-1))
-    (t4.Node4-2:t -- Layer(k16,.Node4-3.Node2-0^k11.Node4-2) → Layer(k16,.Node4-3.Node2-0.Node2-0^k11.Node4-2))
-    (t4.Node4-3:t -- Layer(k17,.Node4-3.Node2-0^k11.Node4-3) → Layer(k17,.Node4-3.Node2-0.Node2-0^k11.Node4-3))
+  | (newt:t -- x → Layer(k0,.t@2))
+  | (newt:t -- x → Layer(k3,.t@3))
+  | (newt:t -- x → Layer(k7,.t@3.t@1))
+    (t4[]:t -- Cell(.t@3.t@0^k11) → Cell(.t@3.t@0.t@0^k11))
+    (t4.int@0:int -- Cell(.t@3.t@0^k11.int@0) → Cell(.t@3.t@0.t@0^k11.int@0))
+    (t4.t@1:t -- Layer(k12,.t@3.t@0^k11.t@1) → Layer(k12,.t@3.t@0.t@0^k11.t@1))
+    (t4.t@2:t -- Layer(k13,.t@3.t@0^k11.t@2) → Layer(k13,.t@3.t@0.t@0^k11.t@2))
+    (t4.t@3:t -- Layer(k14,.t@3.t@0^k11.t@3) → Layer(k14,.t@3.t@0.t@0^k11.t@3))
 }
 
 *)

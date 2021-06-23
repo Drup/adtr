@@ -81,26 +81,23 @@ let conflict pos1 pos2 = match pos1, pos2 with
   | Internal p1, Internal p2 -> Cursor.conflict p1 p2
   | _ -> None
 
-let complement_path tyenv ty (fields0 : Cursor.fields) =
-  let rec aux curr_fields = function
+let complement_path tyenv ty0 (fields0 : Cursor.fields) =
+  let rec aux prev_ty curr_fields = function
     | [] -> [], []
-    | `Down (constr, i) as f :: path ->
-      let all_fields = Types.get_definition tyenv ty in
-      let cell_paths, compl_paths =
-        CCList.partition_filter_map
-          (fun (constr',i',ty') ->
-             if i = i' && ty = ty'
-             then begin
-               if constr = constr' then `Drop
-               else `Left Cursor.(curr_fields +/ down constr' i')
-             end
-             else `Right (Cursor.(curr_fields +/ down constr' i'), ty'))
+    | `Down (ty, i) as f :: path ->
+      let all_fields = Types.get_definition tyenv prev_ty in
+      let compl_paths =
+        CCList.sort_uniq ~cmp:Stdlib.compare @@
+        CCList.filter_map
+          (fun (_constr',i',ty') ->
+             if i = i' && ty = ty' then None
+             else Some (Cursor.(curr_fields +/ down ty' i'), ty'))
           all_fields
       in
-      let cell_paths', compl_paths' = aux Cursor.(curr_fields +/ f) path in
-      (curr_fields :: cell_paths @ cell_paths'), compl_paths @ compl_paths'
+      let curr_fields', compl_paths' = aux ty Cursor.(curr_fields +/ f) path in
+      curr_fields :: curr_fields', compl_paths @ compl_paths'
   in
-  aux Cursor.empty fields0
+  aux ty0 Cursor.empty fields0
 
 let cursor2mem tyenv (r : Cursor.fields t) =
   let transl_movement_scalar { name ; ty ; src ; dest } =
