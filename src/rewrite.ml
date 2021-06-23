@@ -120,7 +120,7 @@ let cursor2mem tyenv r =
          *   (pp_position Cursor.pp) src
          *   (pp_position Cursor.pp) dest
          *   Cursor.pp vector; *)
-        let k = Name.fresh "k" in
+        let k = Index.var @@ Name.fresh "k" in
         let middle_path = [`Multiple (k, vector)] in
         let cell_suffixes, cursor_suffixes =
           complement_path tyenv ty vector
@@ -228,7 +228,8 @@ module DepGraph (Mem : MEM) = struct
           
       let graph_attributes _g = [ `Rankdir `LeftToRight ]
       let default_vertex_attributes _g = []
-      let vertex_name def = "\"" ^ def.name ^ "\""
+      let vertex_name def =
+        Fmt.strf "\"%s:%a\"" def.name Types.pp def.ty
       let vertex_attributes {name;src;dest;ty} =
         let shape =
           if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box

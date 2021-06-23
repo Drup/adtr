@@ -1,19 +1,19 @@
 type down = [
   | `Down of Name.t * int
-  | `Multiple of Name.t * path
+  | `Multiple of Index.t * path
 ]
 and path = down list
 
 type op = [
   | `Up of Name.t * int
   | `Down of Name.t * int
-  | `Multiple of Name.t * cursor
+  | `Multiple of Index.t * cursor
 ]
 and cursor = op list
 
 let (+/) : path -> down -> path = fun a b -> a @ [b]
 
-let rec simplify : cursor -> cursor = function
+let rec simplify : ([< op] list as 'a) -> 'a = function
   | `Down _ :: `Up _ :: l -> simplify l
   | h :: t -> h :: simplify t
   | [] -> []
@@ -81,12 +81,12 @@ let rec overlap (p1:path) (p2:path) = match p1, p2 with
 
 let rec pp_cursor fmt (c: cursor) = match c with
   | [] -> ()
-  | `Up (constr,i) :: t -> Fmt.pf fmt "↑(%a-%i)" Name.pp constr i; pp_cursor fmt t
-  | `Down (constr,i) :: t -> Fmt.pf fmt ".%a-%i" Name.pp constr i; pp_cursor fmt t
-  | `Multiple (name, ([_] as path)) :: t ->
-    Fmt.pf fmt "%a^%a" pp_cursor path Name.pp name; pp_cursor fmt t
-  | `Multiple (name, path) :: t ->
-    Fmt.pf fmt "(%a)^%a" pp_cursor path Name.pp name; pp_cursor fmt t
+  | `Up (constr,i) :: t -> Fmt.pf fmt "↑%i" i; pp_cursor fmt t
+  | `Down (constr,i) :: t -> Fmt.pf fmt ".%i" i; pp_cursor fmt t
+  | `Multiple (i, ([_] as path)) :: t ->
+    Fmt.pf fmt "%a^%a" pp_cursor path Index.pp_parens i; pp_cursor fmt t
+  | `Multiple (i, path) :: t ->
+    Fmt.pf fmt "(%a)^%a" pp_cursor path Index.pp_parens i; pp_cursor fmt t
 
 let pp_cursor fmt = function
   | [] -> Fmt.pf fmt "[]"
