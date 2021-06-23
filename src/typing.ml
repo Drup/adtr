@@ -35,7 +35,7 @@ let get_name n e =
 
 
 let type_pattern tyenv posmap0 pattern0 pat_ty0 = 
-  let rec aux posmap (path : Cursor.path) pattern pat_ty = match pattern with
+  let rec aux posmap (path : Cursor.fields) pattern pat_ty = match pattern with
     | PVar name ->
       add_name name (Rewrite.Internal path, pat_ty) posmap
     | PConstructor { constructor; arguments } ->
@@ -52,7 +52,7 @@ let type_pattern tyenv posmap0 pattern0 pat_ty0 =
 let env_of_posmap posmap = Name.Map.map snd posmap
 
 let type_expression tyenv env posmap0 expr0 expr_ty0 = 
-  let rec aux posmap (path : Cursor.path) expr expr_ty = match expr with
+  let rec aux posmap (path : Cursor.fields) expr expr_ty = match expr with
     | EVar name ->
       let _ty = get_name name env in
       (* Types.check ty expr_ty; *)
