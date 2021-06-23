@@ -9,41 +9,40 @@ rotate (t:tree) : tree = rewrite t {
 }
 (*EXPECT
 rotate (t : tree) : tree = rewrite t {
-  | (i:int | .int@0 → .int@0)
-  | (b[]:tree | .tree@0.tree@2.tree@0^(k1 + 1) → .tree@0.tree@2.tree@0^k1)
+  | 
+  | (b[]:tree | .tree@0.tree@2.tree@0^(k0 + 1) → .tree@0.tree@2.tree@0^k0)
     (b.int@0:int |
-     .tree@0.tree@2.tree@0^(k1 + 1).int@0 →
-     .tree@0.tree@2.tree@0^k1.int@0)
+     .tree@0.tree@2.tree@0^(k0 + 1).int@0 →
+     .tree@0.tree@2.tree@0^k0.int@0)
     (b.int@1:int |
-     .tree@0.tree@2.tree@0^(k1 + 1).int@1 →
-     .tree@0.tree@2.tree@0^k1.int@1)
+     .tree@0.tree@2.tree@0^(k0 + 1).int@1 →
+     .tree@0.tree@2.tree@0^k0.int@1)
     (b.tree@2:tree |
-     .tree@0.tree@2.tree@0^(k1 + 1).tree@2.φ^k2 →
-     .tree@0.tree@2.tree@0^k1.tree@2.φ^k2)
-    (c:tree | .tree@0.tree@2.tree@2.φ^k3 → .tree@2.tree@0.φ^k3)
-    (d[]:tree | .tree@2^(k4 + 1) → .tree@2^(k4 + 2))
-    (d.int@0:int | .tree@2^(k4 + 1).int@0 → .tree@2^(k4 + 2).int@0)
-    (d.int@1:int | .tree@2^(k4 + 1).int@1 → .tree@2^(k4 + 2).int@1)
+     .tree@0.tree@2.tree@0^(k0 + 1).tree@2.φ^k1 →
+     .tree@0.tree@2.tree@0^k0.tree@2.φ^k1)
+    (c:tree | .tree@0.tree@2.tree@2.φ^k2 → .tree@2.tree@0.φ^k2)
+    (d[]:tree | .tree@2^(k3 + 1) → .tree@2^(k3 + 2))
+    (d.int@0:int | .tree@2^(k3 + 1).int@0 → .tree@2^(k3 + 2).int@0)
+    (d.int@1:int | .tree@2^(k3 + 1).int@1 → .tree@2^(k3 + 2).int@1)
     (d.tree@0:tree |
-     .tree@2^(k4 + 1).tree@0.φ^k5 →
-     .tree@2^(k4 + 2).tree@0.φ^k5)
-    (i1:int | .tree@0.int@1 → .tree@0.int@1)
+     .tree@2^(k3 + 1).tree@0.φ^k4 →
+     .tree@2^(k3 + 2).tree@0.φ^k4)
     (i2:int | .tree@0.tree@2.int@1 → .int@1)
     (i3:int | .int@1 → .tree@2.int@1)
-  | (a[]:tree | .tree@0^(k6 + 3) → .tree@0^(k6 + 2))
-    (a.int@0:int | .tree@0^(k6 + 3).int@0 → .tree@0^(k6 + 2).int@0)
-    (a.int@1:int | .tree@0^(k6 + 3).int@1 → .tree@0^(k6 + 2).int@1)
+  | (a[]:tree | .tree@0^(k5 + 3) → .tree@0^(k5 + 2))
+    (a.int@0:int | .tree@0^(k5 + 3).int@0 → .tree@0^(k5 + 2).int@0)
+    (a.int@1:int | .tree@0^(k5 + 3).int@1 → .tree@0^(k5 + 2).int@1)
     (a.tree@2:tree |
-     .tree@0^(k6 + 3).tree@2.φ^k7 →
-     .tree@0^(k6 + 2).tree@2.φ^k7)
-    (b:tree | .tree@0.tree@0.tree@2.φ^k8 → .tree@0.tree@2.φ^k8)
-    (c:tree | .tree@0.tree@2.φ^k9 → .tree@2.tree@0.φ^k9)
-    (d[]:tree | .tree@2^(k10 + 1) → .tree@2^(k10 + 2))
-    (d.int@0:int | .tree@2^(k10 + 1).int@0 → .tree@2^(k10 + 2).int@0)
-    (d.int@1:int | .tree@2^(k10 + 1).int@1 → .tree@2^(k10 + 2).int@1)
+     .tree@0^(k5 + 3).tree@2.φ^k6 →
+     .tree@0^(k5 + 2).tree@2.φ^k6)
+    (b:tree | .tree@0.tree@0.tree@2.φ^k7 → .tree@0.tree@2.φ^k7)
+    (c:tree | .tree@0.tree@2.φ^k8 → .tree@2.tree@0.φ^k8)
+    (d[]:tree | .tree@2^(k9 + 1) → .tree@2^(k9 + 2))
+    (d.int@0:int | .tree@2^(k9 + 1).int@0 → .tree@2^(k9 + 2).int@0)
+    (d.int@1:int | .tree@2^(k9 + 1).int@1 → .tree@2^(k9 + 2).int@1)
     (d.tree@0:tree |
-     .tree@2^(k10 + 1).tree@0.φ^k11 →
-     .tree@2^(k10 + 2).tree@0.φ^k11)
+     .tree@2^(k9 + 1).tree@0.φ^k10 →
+     .tree@2^(k9 + 2).tree@0.φ^k10)
     (i1:int | .tree@0.tree@0.int@1 → .tree@0.int@1)
     (i2:int | .tree@0.int@1 → .int@1)
     (i3:int | .int@1 → .tree@2.int@1)

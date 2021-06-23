@@ -109,7 +109,9 @@ let cursor2mem tyenv (r : Cursor.fields t) =
       [{name ; ty ; src ; dest}]
   in
   let transl_movement { name ; ty ; src ; dest } =
-    if Types.is_scalar ty then
+    if src = dest then
+      []
+    else if Types.is_scalar ty then
       transl_movement_scalar { name ; ty ; src ; dest }
     else
       match conflict src dest with
