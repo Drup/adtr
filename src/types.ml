@@ -8,16 +8,6 @@ type error =
 exception Error of error
 let error e = raise @@ Error e
 
-let rec pp fmt ty = match ty with
-  | TInt -> Fmt.pf fmt "int"
-  | TVar name -> Fmt.pf fmt "'%a" Name.pp name
-  | TConstructor {constructor; arguments = []} ->
-    Fmt.pf fmt "%a" Name.pp constructor
-  | TConstructor {constructor; arguments} ->
-    Fmt.pf fmt "%a (%a)"
-      Name.pp constructor
-      (Fmt.list ~sep:Fmt.comma pp) arguments
-
 let prepare_error = function
   | Error (Unbound_type_variable n) -> 
     Some (Report.errorf "The type variable %a is unbounded" Name.pp n)
@@ -26,11 +16,11 @@ let prepare_error = function
   | Error (Bad_constructor (n, ty)) ->
     Some
       (Report.errorf "The data constructor %a doesn't belong to the type %a."
-         Name.pp n pp ty)
+         Name.pp n Printer.types ty)
   | Error (No_constructor ty) ->
     Some
       (Report.errorf "The type %a doesn't have any constructors."
-         pp ty)
+         Printer.types ty)
   | _ -> None
 
 let () =
@@ -93,7 +83,8 @@ let rec get_definition_with_subst tyenv subst ty =
       | Sum constrs ->
         let f { constructor ; arguments } =
           List.mapi
-            (fun i ty -> constructor, i, Subst.type_expr subst ty)
+            (fun pos ty ->
+               constructor, {Field. pos; ty = Subst.type_expr subst ty})
             arguments
         in
         CCList.flat_map f constrs

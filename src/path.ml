@@ -1,29 +1,16 @@
-type field = [
-  | `Down of Syntax.type_expr * int
-]
-type fields = field list
-
-let (+/) : fields -> field -> fields = fun a b -> a @ [b]
-(** [conflict p1 p2] computes if one path is prefix of the other.
-    Return which one is shortest, along with the extra bits *)
-
-let rec conflict (p1:fields) (p2:fields) = match p1, p2 with
-  | [], l -> Some (`left, l)
-  | l, [] -> Some (`right, l)
-  | (`Down x1)::t1, (`Down x2)::t2 ->
-    if x1 = x2 then conflict t1 t2
-    else None
-
-type down = [
-  | field
+type op = [
+  | `Down of Field.field
   | `Any of Index.t
-  | `Multiple of Index.t * fields
+  | `Multiple of Index.t * Field.t
 ]
-and path = down list
+and t = op list
 
-let as_path x = (x :> path)
+let empty = []
+let down ty pos : op = `Down {Field. ty; pos}
+let any k : op = `Any k
+let of_fields : Field.t -> t = List.map (fun x -> `Down x)
 
-let simplify (p : path) =
+let simplify (p : t) =
   let count_times_prefix_and_split ~prefix l =
     let rec take_prefix previous_rest curr_prefix l = match curr_prefix, l with
       | [], [] -> 1, []
@@ -43,12 +30,12 @@ let simplify (p : path) =
     | `Multiple _ as f :: after ->
       `Some_multiple (before_rev, f, after)
   in
-  let rec merge_at_multiple (p : [< down] list) =
+  let rec merge_at_multiple (p : [< op] list) =
     match split_at_first_multiple [] p with
     | `No_multiple l ->
-      as_path l
+      l
     | `Some_multiple (before_rev, `Multiple (k,l), after) ->
-      let mov = as_path l in
+      let mov = of_fields l in
       let i, rest_before =
         count_times_prefix_and_split ~prefix:(List.rev mov) before_rev
       in
@@ -61,7 +48,7 @@ let simplify (p : path) =
           j, after1 @ f :: after2
       in
       let k = Index.(k + const i + const j) in
-      as_path (List.rev rest_before)
+      (List.rev rest_before)
       @ [`Multiple (k,l)]
       @ merge_at_multiple rest_after
   in
@@ -69,13 +56,10 @@ let simplify (p : path) =
 
 let (++) a b = simplify @@ List.append a b
 
-let down constr i = `Down (constr, i)
-let empty = []
 
 
 
-
-let rec overlap (p1:path) (p2:path) = match p1, p2 with
+let rec overlap (p1:t) (p2:t) = match p1, p2 with
   | [], [] -> true
   | (`Down _ | `Any _) :: _, []
   | [], (`Down _ | `Any _) :: _ -> false
@@ -87,28 +71,27 @@ let rec overlap (p1:path) (p2:path) = match p1, p2 with
     x1 = x2 && overlap t1 t2
   | `Multiple (_,rep1) :: t1, p2 ->
     overlap t1 p2 (* || 
-     * begin match conflict rep1 p2 with
-     *   | None -> false
-     *   | _ -> overlap (rep1 @ p1) p2
-     * end *)
+                   * begin match conflict rep1 p2 with
+                   *   | None -> false
+                   *   | _ -> overlap (rep1 @ p1) p2
+                   * end *)
   | p1, `Multiple (_,rep2) :: t2 ->
     overlap p1 t2(*  || 
-     * begin match conflict p1 rep2 with
-     *   | None -> false
-     *   | _ -> overlap p1 (rep2 @ p2)
-     * end *)
+                  * begin match conflict p1 rep2 with
+                  *   | None -> false
+                  *   | _ -> overlap p1 (rep2 @ p2)
+                  * end *)
 
-let rec pp_path fmt (c: path) = match c with
+
+let rec pp fmt (c: t) = match c with
   | [] -> ()
-  | `Down (ty,i) :: t -> Fmt.pf fmt ".%a@%i" Types.pp ty i; pp_path fmt t
-  | `Any k :: t -> Fmt.pf fmt ".φ^%a" Index.pp_parens k; pp_path fmt t
-  | `Multiple (k, ([_] as path)) :: t ->
-    Fmt.pf fmt "%a^%a" pp_path (path :> path) Index.pp_parens k; pp_path fmt t
-  | `Multiple (k, path) :: t ->
-    Fmt.pf fmt "(%a)^%a" pp_path (path :> path) Index.pp_parens k; pp_path fmt t
+  | `Down f :: t -> Field.pp_field fmt f; pp fmt t
+  | `Any k :: t -> Fmt.pf fmt ".φ^%a" Index.pp_parens k; pp fmt t
+  | `Multiple (k, ([_] as fields)) :: t ->
+    Fmt.pf fmt "%a^%a" Field.pp fields Index.pp_parens k; pp fmt t
+  | `Multiple (k, fields) :: t ->
+    Fmt.pf fmt "(%a)^%a" Field.pp fields Index.pp_parens k; pp fmt t
 
-let pp_path fmt = function
+let pp fmt = function
   | [] -> Fmt.pf fmt "[]"
-  | l -> pp_path fmt l
-
-let pp fmt p = pp_path fmt (p : fields :> path)
+  | l -> pp fmt l

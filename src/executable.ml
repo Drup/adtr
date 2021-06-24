@@ -38,9 +38,9 @@ include Peahell.Make(struct
           Types.Env.add decl.name decl tyenv
         | Rewrite r ->
           let cursor_moves = Typing.type_rewrite tyenv r in
-          let mem_moves = Rewrite.cursor2mem tyenv cursor_moves in
-          Peahell.Report.printf "%a@." (Rewrite.pp Rewrite.Mem.pp) mem_moves;
-          if !show_depgraph then List.iter Rewrite.WithMem.create_and_show mem_moves.clauses ;
+          let mem_moves = Rewrite.subtree2layer tyenv cursor_moves in
+          Peahell.Report.printf "%a@." (Rewrite.pp Rewrite.Layer.pp) mem_moves;
+          if !show_depgraph then List.iter Rewrite.WithPath.create_and_show mem_moves.clauses ;
           tyenv        
       in
       List.fold_left f tyenv0 l

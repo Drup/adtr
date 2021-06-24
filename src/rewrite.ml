@@ -26,6 +26,17 @@ type 'a t = {
   clauses : 'a clause list;
 }
 
+(** Generic utilities *)
+
+let map_position f = function
+  | Internal x -> Internal (f x)
+  | Absent -> Absent
+  | External -> External
+
+let map_movement f { name ; src ; dest ; ty } =
+  let src = map_position f src in
+  let dest = map_position f dest in
+  { name ; src ; dest ; ty }
 
 (** Printers *)
 
@@ -37,7 +48,7 @@ let pp_position pp_mem fmt = function
 let pp_clause pp_mem =
   let pp_def fmt { name ; src ; dest ; ty } =
     Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] →@ @[<h>%a@])@]"
-      name Types.pp ty (pp_position pp_mem) src (pp_position pp_mem) dest
+      name Printer.types ty (pp_position pp_mem) src (pp_position pp_mem) dest
   in
   Fmt.vbox @@ Fmt.list pp_def
 
@@ -46,56 +57,59 @@ let pp pp_mem fmt
   Fmt.pf fmt "@[<v>@[<v2>@[%a@ (%a)@ : %a@ = rewrite %a @]{@ %a@]@ }@]"
     Name.pp f
     (Fmt.list ~sep:(Fmt.unit ", ") @@
-     Fmt.pair ~sep:(Fmt.unit " : ") Name.pp Types.pp) parameters
-    Types.pp return_ty
+     Fmt.pair ~sep:(Fmt.unit " : ") Name.pp Printer.types) parameters
+    Printer.types return_ty
     Name.pp discriminant
     (Fmt.vbox @@ Fmt.list @@ Fmt.prefix (Fmt.unit "| ") @@ pp_clause pp_mem)
     clauses
 
-(** Translate cursor-based view to mem-based view *)
+(** Subtree view *)
 
-module Mem = struct
+module Subtree = struct
 
-  type t = Cursor.path
-  let pp = Cursor.pp_path
+  let conflict pos1 pos2 = match pos1, pos2 with
+    | Internal p1, Internal p2 -> Field.conflict p1 p2
+    | _ -> None
 
-  let conflict mem1 mem2 =
-    if Cursor.overlap mem1 mem2 then Some Cursor.empty else None
+  let complement tyenv ty0 (fields0 : Field.t) =
+    let rec aux prev_ty curr_fields = function
+      | [] -> [], []
+      | {Field. ty; pos} as f :: path ->
+        let all_fields = Types.get_definition tyenv prev_ty in
+        let compl_paths =
+          CCList.sort_uniq ~cmp:Stdlib.compare @@
+          CCList.filter_map
+            (fun (_constr',f') ->
+               if f = f' then None
+               else Some (Field.(curr_fields +/ f'), f'.ty))
+            all_fields
+        in
+        let curr_fields', compl_paths' = aux ty Field.(curr_fields +/ f) path in
+        curr_fields :: curr_fields', compl_paths @ compl_paths'
+    in
+    aux ty0 Field.empty fields0
+
 end
 
-let map_position f = function
-  | Internal x -> Internal (f x)
-  | Absent -> Absent
-  | External -> External
-let cell p = Cursor.as_path p
-let layer k p = Cursor.(as_path p ++ [`Any k])
+(** Layer view *)
+module Layer = struct
 
-let conflict pos1 pos2 = match pos1, pos2 with
-  | Internal p1, Internal p2 -> Cursor.conflict p1 p2
-  | _ -> None
+  type t = Path.t
+  let pp = Path.pp
 
-let complement_path tyenv ty0 (fields0 : Cursor.fields) =
-  let rec aux prev_ty curr_fields = function
-    | [] -> [], []
-    | `Down (ty, i) as f :: path ->
-      let all_fields = Types.get_definition tyenv prev_ty in
-      let compl_paths =
-        CCList.sort_uniq ~cmp:Stdlib.compare @@
-        CCList.filter_map
-          (fun (_constr',i',ty') ->
-             if i = i' && ty = ty' then None
-             else Some (Cursor.(curr_fields +/ down ty' i'), ty'))
-          all_fields
-      in
-      let curr_fields', compl_paths' = aux ty Cursor.(curr_fields +/ f) path in
-      curr_fields :: curr_fields', compl_paths @ compl_paths'
-  in
-  aux ty0 Cursor.empty fields0
+  let conflict mem1 mem2 =
+    if Path.overlap mem1 mem2 then Some Path.empty else None
 
-let cursor2mem tyenv (r : Cursor.fields t) =
+  let one p = p
+  let many k p = Path.(p ++ [any k])
+end
+
+
+
+let subtree2layer tyenv (r : Field.t t) =
   let transl_movement_scalar { name ; ty ; src ; dest } =
-    let src = map_position cell src in
-    let dest = map_position cell dest in
+    let src = map_position Layer.one src in
+    let dest = map_position Layer.one dest in
     [{name ; ty ; src ; dest }]
   in
   let transl_movement_no_conflict { name ; ty ; src ; dest } =
@@ -104,17 +118,18 @@ let cursor2mem tyenv (r : Cursor.fields t) =
       transl_movement_scalar { name ; ty ; src ; dest }
     else
       let k = Index.var @@ Name.fresh "k" in
-      let src = map_position (layer k) src in
-      let dest = map_position (layer k) dest in
+      let src = map_position (Layer.many k) src in
+      let dest = map_position (Layer.many k) dest in
       [{name ; ty ; src ; dest}]
   in
-  let transl_movement { name ; ty ; src ; dest } =
+  let transl_movement ({ name ; ty ; src ; dest } as f) =
     if src = dest then
       []
     else if Types.is_scalar ty then
-      transl_movement_scalar { name ; ty ; src ; dest }
+      let f = map_movement Path.of_fields f in
+      transl_movement_scalar f
     else
-      match conflict src dest with
+      match Subtree.conflict src dest with
       | Some (_, vector) ->
         (* Report.infof "Rewrite"
          *   "@[%a ⋈ %a = %a@]@."
@@ -122,10 +137,20 @@ let cursor2mem tyenv (r : Cursor.fields t) =
          *   (pp_position Cursor.pp) dest
          *   Cursor.pp vector; *)
         let k = Index.var @@ Name.fresh "k" in
-        let middle_path : Cursor.path = [`Multiple (k, vector)] in
+        let middle_path : Path.t = [`Multiple (k, vector)] in
         let cell_suffixes, cursor_suffixes =
-          complement_path tyenv ty vector
+          Subtree.complement tyenv ty vector
         in
+        (** TODO We should try harder to assert that all those path suffixes are 
+            non-conflicting *)
+        assert (
+          let f ((l1,_),(l2,_)) = CCOpt.is_none @@ Field.conflict l1 l2 in
+          CCList.(for_all f @@ diagonal cursor_suffixes)
+        );
+        assert (
+          let f (l1,l2) = l1 <> l2 in
+          CCList.(for_all f @@ diagonal cell_suffixes)
+        );
         (* Report.infof "Rewrite"
          *   "@[<v>Movement:%a@,Cells:%a@,Cursors:%a@]@."
          *   Cursor.pp vector
@@ -133,12 +158,13 @@ let cursor2mem tyenv (r : Cursor.fields t) =
          *   Fmt.(box @@ Dump.list @@ (fun fmt (p,c) -> Fmt.pf fmt "%a/%a" Cursor.pp p Types.pp c)) cursor_suffixes; *)
         let cell_moves =
           let mk_move suff =
-            let suff = Cursor.as_path suff in
+            let suff = Path.of_fields suff in
             let f =
               map_position
-                (fun pref -> cell Cursor.(as_path pref ++ middle_path ++ suff))
+                (fun pref ->
+                   Layer.one Path.(of_fields pref ++ middle_path ++ suff))
             in
-            let name = Fmt.strf "%s%a" name Cursor.pp_path suff in
+            let name = Fmt.strf "%s%a" name Path.pp suff in
             let src = f src in
             let dest = f dest in
             { name ; src ; dest ; ty }
@@ -147,12 +173,12 @@ let cursor2mem tyenv (r : Cursor.fields t) =
         in
         let cursor_moves = 
           let mk_move (suff, ty) =
-            let suff = Cursor.as_path suff in
+            let suff = Path.of_fields suff in
             let f =
               map_position
-                (fun pref -> Cursor.(as_path pref ++ middle_path ++ suff))
+                (fun pref -> Path.(of_fields pref ++ middle_path ++ suff))
             in
-            let name = Fmt.strf "%s%a" name Cursor.pp_path suff in
+            let name = Fmt.strf "%s%a" name Path.pp suff in
             let src = f src in
             let dest = f dest in
             transl_movement_no_conflict { name ; src ; dest ; ty }
@@ -161,7 +187,8 @@ let cursor2mem tyenv (r : Cursor.fields t) =
         in
         cell_moves @ cursor_moves
       | None ->
-        transl_movement_no_conflict { name ; ty ; src ; dest }
+        let f = map_movement Path.of_fields f in
+        transl_movement_no_conflict f
   in
   let make_clause old_clause =
     CCList.flat_map transl_movement old_clause
@@ -210,13 +237,6 @@ module DepGraph (Mem : MEM) = struct
     | None -> g
   
   let create (moves : _ clause) =
-    (* let is_interesting_moves def =
-     *   not (def.src = def.dest || def.dest = Absent)
-     * in
-     * let moves =
-     *   List.filter is_interesting_moves moves
-     * in *)
-
     List.fold_left (fun g def1 ->
         let g = add_vertex g def1 in
         List.fold_left (fun g def2 ->
@@ -231,14 +251,14 @@ module DepGraph (Mem : MEM) = struct
       let graph_attributes _g = [ `Rankdir `LeftToRight ]
       let default_vertex_attributes _g = []
       let vertex_name def =
-        Fmt.strf "\"%s:%a\"" def.name Types.pp def.ty
+        Fmt.strf "\"%s:%a\"" def.name Printer.types def.ty
       let vertex_attributes {name;src;dest;ty} =
         let shape =
           if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box
         in
         let label =
           Fmt.str "%a\n%a\n%a → %a"
-            Name.pp name Types.pp ty
+            Name.pp name Printer.types ty
             (pp_position Mem.pp) src (pp_position Mem.pp) dest
         in
         [shape; `Label label]
@@ -267,21 +287,18 @@ module DepGraph (Mem : MEM) = struct
     if not @@ is_empty g then show g
 end
 
-module WithCursor = DepGraph(struct
-    type t = Cursor.fields
-    let pp = Cursor.pp
-    type conflict = Cursor.fields
-    let pp_conflict = Cursor.pp
-    let default = Cursor.empty
+module WithField = DepGraph(struct
+    include Field
+    type conflict = Field.t
+    let pp_conflict = Field.pp
+    let default = Field.empty
     let conflict p1 p2 =
-      Cursor.conflict p1 p2 |> CCOpt.map @@ function
-      | `left, p -> (p : t :> conflict)
-      | `right, p -> (p : t :> conflict)
+      Field.conflict p1 p2 |> CCOpt.map snd
   end)
 
-module WithMem = DepGraph(struct
-    include Mem
-    type conflict = Cursor.path
-    let pp_conflict = Cursor.pp_path
-    let default = Cursor.empty
+module WithPath = DepGraph(struct
+    include Layer
+    type conflict = Path.t
+    let pp_conflict = Path.pp
+    let default = Path.empty
   end)

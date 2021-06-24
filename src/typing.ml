@@ -16,7 +16,7 @@ let prepare_error = function
       (Report.errorf "The variable %a is unbounded" Name.pp n)
   | Error (Cannot_pattern_match ty) ->
     Some
-      (Report.errorf "This rewrite is applied to a value of type %a.@ Values of this type can't be rewriten." Types.pp ty)
+      (Report.errorf "This rewrite is applied to a value of type %a.@ Values of this type can't be rewriten." Printer.types ty)
   | _ -> None
 
 let () =
@@ -35,7 +35,7 @@ let get_name n e =
 
 
 let type_pattern tyenv posmap0 pattern0 pat_ty0 = 
-  let rec aux posmap (path : Cursor.fields) pattern pat_ty = match pattern with
+  let rec aux posmap (path : Field.t) pattern pat_ty = match pattern with
     | PVar name ->
       add_name name (Rewrite.Internal path, pat_ty) posmap
     | PConstructor { constructor; arguments } ->
@@ -43,16 +43,16 @@ let type_pattern tyenv posmap0 pattern0 pat_ty0 =
         Types.instantiate_data_constructor tyenv constructor pat_ty
       in
       CCList.foldi2
-        (fun env i pattern pat_ty ->
-           aux env Cursor.(path +/ down pat_ty i) pattern pat_ty)
+        (fun env pos pattern pat_ty ->
+           aux env Field.(path +/ {ty = pat_ty; pos}) pattern pat_ty)
         posmap arguments argument_tys
   in
-  aux posmap0 Cursor.empty pattern0 pat_ty0
+  aux posmap0 Field.empty pattern0 pat_ty0
 
 let env_of_posmap posmap = Name.Map.map snd posmap
 
 let type_expression tyenv env posmap0 expr0 expr_ty0 = 
-  let rec aux posmap (path : Cursor.fields) expr expr_ty = match expr with
+  let rec aux posmap (path : Field.t) expr expr_ty = match expr with
     | EVar name ->
       let _ty = get_name name env in
       (* Types.check ty expr_ty; *)
@@ -62,11 +62,11 @@ let type_expression tyenv env posmap0 expr0 expr_ty0 =
         Types.instantiate_data_constructor tyenv constructor expr_ty
       in
       CCList.foldi2
-        (fun env i expr expr_ty ->
-           aux env Cursor.(path +/ down expr_ty i) expr expr_ty)
+        (fun env pos expr expr_ty ->
+           aux env Field.(path +/ { ty = expr_ty; pos}) expr expr_ty)
         posmap arguments argument_tys
   in
-  aux posmap0 Cursor.empty expr0 expr_ty0
+  aux posmap0 Field.empty expr0 expr_ty0
 
 let type_clause tyenv env (pattern, pat_ty) (expr, expr_ty) =
   let inputs = Name.Map.map (fun ty -> Rewrite.External, ty) env in
