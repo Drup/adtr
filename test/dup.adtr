@@ -1,0 +1,25 @@
+type t = One (t) | Two (int,t,t)
+(*EXPECT
+
+*)
+
+dup (t:t, i:int) : t = rewrite t {
+  | One (x) -> Two(i,x,x)
+}
+(*EXPECT
+dup (t : t, i : int) : t = rewrite t {
+  | (i:int | x → .int@0)
+    (x:t | .t@0.φ^k0 → .t@2.φ^k0)
+    (x:t | .t@0.φ^k1 → .t@1.φ^k1)
+}
+
+*)
+
+
+wrongdup (t:t) : t = rewrite t {
+  | Two (i,x,x) -> One(x)
+}
+(*EXPECT
+Error: This variable `x` is defined twice in this clause. This is not allowed.
+*)
+

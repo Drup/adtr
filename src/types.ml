@@ -26,6 +26,14 @@ let prepare_error = function
 let () =
   Report.register_report_of_exn prepare_error
 
+let rec equal ty1 ty2 = match ty1, ty2 with
+  | TInt, TInt -> true
+  | TVar a, TVar b -> Name.equal a b
+  | TConstructor { constructor = c1 ; arguments = a1 },
+    TConstructor { constructor = c2 ; arguments = a2} ->
+    Name.equal c1 c2 && CCList.equal equal a1 a2
+  | _, _ -> false
+
 let is_scalar ty = match ty with
   | TInt -> true
   | TConstructor _ -> false
