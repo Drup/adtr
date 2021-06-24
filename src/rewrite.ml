@@ -98,48 +98,44 @@ module Layer = struct
   let pp = Path.pp
 
   let conflict mem1 mem2 =
-    if Path.overlap mem1 mem2 then Some Path.empty else None
+    (* if Path.overlap mem1 mem2 then Some Path.empty else None *)
+    None
 
-  let one p = p
-  let many k p = Path.(p ++ [any k])
+  let one (fields, mult) : Path.t = Path.simplify [ fields ; mult]
+  let many k (fields, mult) : Path.t = Path.simplify [ fields ; mult ; k]
 end
 
 
 
 let subtree2layer tyenv (r : Field.t t) =
-  let transl_movement_scalar { name ; ty ; src ; dest } =
-    let src = map_position Layer.one src in
-    let dest = map_position Layer.one dest in
-    [{name ; ty ; src ; dest }]
+  let transl_movement_scalar mov : Path.t movement list =
+    [map_movement Layer.one mov]
   in
-  let transl_movement_no_conflict { name ; ty ; src ; dest } =
+  let transl_movement_no_conflict mov =
     (* INVARIANT: src and dest are not conflicting *)
-    if Types.is_scalar ty then
-      transl_movement_scalar { name ; ty ; src ; dest }
+    if Types.is_scalar mov.ty then
+      transl_movement_scalar mov
     else
       let k = Index.var @@ Name.fresh "k" in
-      let src = map_position (Layer.many k) src in
-      let dest = map_position (Layer.many k) dest in
-      [{name ; ty ; src ; dest}]
+      [map_movement (Layer.many k) mov]
   in
   let transl_movement ({ name ; ty ; src ; dest } as f) =
     if src = dest then
       []
     else if Types.is_scalar ty then
-      let f = map_movement Path.of_fields f in
+      let f = map_movement (fun l -> (l, None)) f in
       transl_movement_scalar f
     else
       match Subtree.conflict src dest with
-      | Some (_, vector) ->
+      | Some (_, mov) ->
         (* Report.infof "Rewrite"
          *   "@[%a ⋈ %a = %a@]@."
          *   (pp_position Cursor.pp) src
          *   (pp_position Cursor.pp) dest
          *   Cursor.pp vector; *)
-        let k = Index.var @@ Name.fresh "k" in
-        let middle_path : Path.t = [`Multiple (k, vector)] in
+        let index = Index.var @@ Name.fresh "k" in
         let cell_suffixes, cursor_suffixes =
-          Subtree.complement tyenv ty vector
+          Subtree.complement tyenv ty mov
         in
         (** TODO We should try harder to assert that all those path suffixes are 
             non-conflicting *)
@@ -157,37 +153,30 @@ let subtree2layer tyenv (r : Field.t t) =
          *   Fmt.(box @@ Dump.list Cursor.pp) cell_suffixes
          *   Fmt.(box @@ Dump.list @@ (fun fmt (p,c) -> Fmt.pf fmt "%a/%a" Cursor.pp p Types.pp c)) cursor_suffixes; *)
         let cell_moves =
-          let mk_move suff =
-            let suff = Path.of_fields suff in
-            let f =
-              map_position
-                (fun pref ->
-                   Layer.one Path.(of_fields pref ++ middle_path ++ suff))
+          let mk_move suffix =
+            let f prefix : Path.t =
+              Layer.one (prefix, Some {Path. index ; mov ; suffix })
             in
-            let name = Fmt.strf "%s%a" name Path.pp suff in
-            let src = f src in
-            let dest = f dest in
+            let name = Fmt.strf "%s%a" name Field.pp_top suffix in
+            let src =  map_position f src in
+            let dest = map_position f dest in
             { name ; src ; dest ; ty }
           in
           List.map mk_move cell_suffixes
         in
         let cursor_moves = 
-          let mk_move (suff, ty) =
-            let suff = Path.of_fields suff in
-            let f =
-              map_position
-                (fun pref -> Path.(of_fields pref ++ middle_path ++ suff))
-            in
-            let name = Fmt.strf "%s%a" name Path.pp suff in
-            let src = f src in
-            let dest = f dest in
+          let mk_move (suffix, ty) =
+            let f pref = (pref, Some {Path. index ; mov ; suffix }) in
+            let name = Fmt.strf "%s%a" name Field.pp_top suffix in
+            let src = map_position f src in
+            let dest = map_position f dest in
             transl_movement_no_conflict { name ; src ; dest ; ty }
           in
           CCList.flat_map mk_move cursor_suffixes
         in
         cell_moves @ cursor_moves
       | None ->
-        let f = map_movement Path.of_fields f in
+        let f = map_movement (fun l -> (l, None)) f in
         transl_movement_no_conflict f
   in
   let make_clause old_clause =
