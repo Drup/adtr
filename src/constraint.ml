@@ -8,16 +8,15 @@ type t =
 let tt = True
 let ff = False
   
-let (===) x1 x2 =
-  match Index.simplify x1, Index.simplify x2 with
+let (===) (x1 : Index.t) (x2 : Index.t) =
+  match x1, x2 with
   | x1, x2 when x1 = x2 -> tt
-  | Constant i1, Constant i2 ->
+  | {constant = i1; monomes = []}, {constant = i2; monomes = []} ->
     if i1 = i2 then tt else ff
-  | (Sum _ as x1), (Sum _ as x2) ->
+  | x1, x2 -> 
     let i1 = Index.min x1 and i2 = Index.min x2 in
     let c = Index.const (- (min i1 i2)) in
     Constr Index.(x1 + c, x2 + c)
-  | x1, x2 -> Constr (x1,x2)
 
 let (|||) x1 x2 = match x1, x2 with
   | True, x | x, True -> True

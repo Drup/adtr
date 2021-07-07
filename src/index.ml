@@ -1,100 +1,70 @@
-type t =
-  | Var of Name.t
-  | Constant of int
-  | Sum of t list
-  | Product of t list
+type var = Name.t 
 
-let rec refresh_name = function
-  | Var n -> Var (n ^"'")
-  | Constant i -> Constant i
-  | Sum l -> Sum (List.map refresh_name l)
-  | Product l -> Product (List.map refresh_name l)
+type monome = Name.t * int
+type t = {
+  monomes : monome list ;
+  constant : int ;
+}
 
-let rec simplify = function
-  | Var _ 
-  | Constant _ as e -> e
-  | Sum l -> sum l
-  | Product l -> product l
+let refresh_name p =
+  let monomes =
+    List.map (fun (var,f) -> (var ^"'", f)) p.monomes
+  in 
+  { p with monomes }
 
-and sum l0 = 
-  let rec aux ~constant ~others = function
-    | [] ->
-      begin match others, constant with
-        | [], c -> Constant c
-        | [e], 0 -> e
-        | l, 0 -> Sum l
-        | l, c -> Sum (l @ [Constant c])
-      end
-    | h :: t ->
-      begin match simplify h with
-        | Var _ | Product _ as e ->
-          let others = e :: others in
-          aux ~constant ~others t
-        | Constant i ->
-          let constant = constant + i in
-          aux ~constant ~others t
-        | Sum inner ->
-          aux ~constant ~others (inner @ t)          
-      end
+let map_of_monomes l =
+  Name.Map.of_list l
+let monomes_of_map m =
+  Name.Map.to_list m
+
+
+let map_factors f { monomes; constant } =
+  let constant = f constant in
+  let monomes = List.map (fun (var, fact) -> (var, f fact)) monomes in
+  {constant;monomes}
+
+let plus e1 e2 =
+  let constant = e1.constant + e2.constant in
+  let monomes =
+    monomes_of_map @@
+    Name.Map.union (fun _ i1 i2 -> Some (i1 + i2))
+    (map_of_monomes e1.monomes)
+    (map_of_monomes e2.monomes)
   in
-  aux ~constant:0 ~others:[] l0
+  {constant;monomes}
 
-and product l0 = 
-  let rec aux ~constant ~others = function
-    | [] ->
-      if constant = 1 then
-        begin match others with
-          | [] -> Constant constant
-          | [e] -> e
-          | l -> Product l
-        end
-      else
-        Product (others @ [Constant constant])
-    | h :: t ->
-      begin match simplify h with
-        | Var _ | Sum _ as e ->
-          let others = e :: others in
-          aux ~constant ~others t
-        | Constant i ->
-          let constant = constant * i in
-          aux ~constant ~others t
-        | Product inner ->
-          aux ~constant ~others (inner @ t)          
-      end
-  in
-  aux ~constant:1 ~others:[] l0
+let const constant = { monomes = [] ; constant }
+let zero = const 0
 
-let rec min = function
-  | Constant i -> i
-  | Var _ -> 0
-  | Product l -> List.fold_left ( * ) 1 (List.map min l)
-  | Sum l -> List.fold_left ( + ) 0 (List.map min l)
+let mult k e =
+  if k = 0 then const 0
+  else map_factors (fun x -> k * x) e
 
-let var n = Var n
-let const i = Constant i
-let plus a b = sum [a;b]
-let (+) = plus
-let mult a b = product [a;b]
-let ( * ) = mult
-let incr x = x + Constant 1
-let decr x = x + Constant (-1)
+let ( * ) k v = if k = 0 then const 0 else { monomes = [v, k] ; constant = 0 }
+let ( + ) = plus
+let ( *@ ) = mult
 
-let rec is_nullable = function
-  | Var _ -> true
-  | Constant i -> i = 0
-  | Sum l -> List.for_all is_nullable l
-  | Product l -> List.exists is_nullable l
+let var v = 1 * v
+
+let incr x = x + (const 1)
+let decr x = x + (const (-1))
+
+let min e = e.constant
+let is_nullable e = min e = 0
 
 let need_parens = function
-  | Var _ | Constant _ -> false
-  | Sum _ | Product _ -> true
+  | { constant = 0 ; monomes = [_] }
+  | { monomes = []; _} -> false
+  | _ -> true
 
-let rec pp fmt = function
-  | Var n -> Name.pp fmt n
-  | Constant i -> Fmt.int fmt i
-  | Sum l ->
-    Fmt.(hbox @@ list ~sep:(unit "@ + ") pp_parens) fmt l
-  | Product l ->
-    Fmt.(hbox @@ list ~sep:(unit "@ * ") pp_parens) fmt l
-and pp_parens fmt x = if need_parens x then Fmt.parens pp fmt x else pp fmt x
-    
+let pp_monome fmt (var,k) =
+  if k = 1 then Name.pp fmt var else Fmt.pf fmt "%i*%a" k Name.pp var 
+let pp fmt { constant ; monomes } =
+  match constant, monomes with
+  | i, [] -> Fmt.int fmt i
+  | i, l ->
+    Fmt.pf fmt "%a" Fmt.(hbox @@ list ~sep:(unit " + ") pp_monome) monomes;
+    if constant = 0 then ()
+    else Fmt.pf fmt " + %i" constant
+
+let pp_parens fmt x = if need_parens x then Fmt.parens pp fmt x else pp fmt x

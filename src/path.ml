@@ -81,6 +81,7 @@ and pp_layer fmt = function
 
 open Constraint
 
+let lenf l = List.length l
 let len l = Index.const @@ List.length l
 let len_layer : layers -> _ =
   function [] -> Index.const 0 | [index] -> index
@@ -117,12 +118,12 @@ let rec overlap_one_mult (prefix1,{ index; mov; suffix },wild1) (prefix2,wild2) 
   | None -> ff
   | Some (`eq, _) ->
     Index.(
-      (len mov * index) + len suffix + len_layer wild1 ===
+      (lenf mov *@ index) + len suffix + len_layer wild1 ===
       len_layer wild2
     )
   | Some (`right, m) ->
     Index.(
-      len m + (len mov * index) + len suffix + len_layer wild1 ===
+      len m + (lenf mov *@ index) + len suffix + len_layer wild1 ===
       len_layer wild2
     )
   | Some (`left, m) ->

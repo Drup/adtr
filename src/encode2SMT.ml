@@ -4,19 +4,14 @@ open ZZ
 
 module H = CCHashtbl.Make(Name)
   
-let rec index2smt h (idx : Index.t) =
-  let rec aux (idx : Index.t) = match idx with
-    | Index.Var n ->
-      T.symbol @@
-      H.get_or_add h ~f:(fun n -> Symbol.declare Int n) ~k:n
-    | Index.Constant i ->
-      T.int i
-    | Index.Sum l ->
-      T.add (List.map aux l)
-    | Index.Product l ->
-      T.mul (List.map aux l)
+let rec index2smt h ({ monomes; constant } : Index.t) =
+  let mk_monome (var, factor) =
+    let sym = T.symbol @@
+      H.get_or_add h ~f:(fun n -> Symbol.declare Int n) ~k:var
+    in 
+    T.(int factor * sym)
   in
-  aux idx
+  T.add (T.int constant :: List.map mk_monome monomes)
 
 let sort = (Seq (Bitvector 8))
 let decl_word base = Symbol.declare sort (Name.fresh base)
@@ -57,43 +52,42 @@ let field2smt (l : Field.t) =
 let path2smt s0 p =
   let vars = H.create 17 in
   let rec path : Path.t -> _ = function
-    | [] -> [],[],[],[]
+    | [] -> [],[],Index.zero,[]
     | l :: rest ->
       let s, len = field2smt l in
       let rest_re, rest_s, rest_len, formula = mult rest in
       as_re s :: rest_re,
       s @ rest_s,
-      Index.const len :: rest_len,
+      Index.(const len + rest_len),
       formula
   and mult : Path.mult -> _ = function
-    | [] -> [],[],[],[]
+    | [] -> [],[],Index.zero,[]
     | None :: rest -> layers rest
     | Some { index; mov; suffix } :: rest ->
       let s = T.symbol @@ decl_word "m" in
       let s_mov, len_mov = field2smt mov in
       let new_re = Z3Regex.(star @@ as_re s_mov) in
-      let new_monome = Index.(index * const len_mov) in
+      let new_monome = Index.(len_mov *@ index) in
       let suffix_s, suffix_len = field2smt suffix in
       let rest_re, rest_s, rest_len, formula = layers rest in
       let i = index2smt vars new_monome in
       let f = T.(Z3Seq.length s = i) in
       new_re :: as_re suffix_s :: rest_re,
       s :: suffix_s @ rest_s, 
-      new_monome :: Index.const suffix_len :: rest_len,
+      Index.(new_monome + Index.const suffix_len + rest_len),
       f :: formula
   and layers : Path.layers -> _ = function
-    | [] -> [],[],[],[]
+    | [] -> [],[],Index.zero,[]
     | idx :: [] ->
       let i = index2smt vars idx in
       let s = T.symbol @@ decl_word "φ" in
       let f = T.(Z3Seq.length s = i) in
-      [Z3Regex.any @@ Regex sort], [s], [idx], [f]
+      [Z3Regex.any @@ Regex sort], [s], idx, [f]
   in
   let re, s, poly, formula = path p in
   let all_pos =
     List.map (fun x -> T.(!x >= int 0)) @@ H.values_list vars 
   in
-  let poly = Index.sum poly in
   concat_re re,
   poly,
   T.((Z3Seq.concat s = s0) &&
