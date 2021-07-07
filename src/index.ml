@@ -64,6 +64,12 @@ and product l0 =
   in
   aux ~constant:1 ~others:[] l0
 
+let rec min = function
+  | Constant i -> i
+  | Var _ -> 0
+  | Product l -> List.fold_left ( * ) 1 (List.map min l)
+  | Sum l -> List.fold_left ( + ) 0 (List.map min l)
+
 let var n = Var n
 let const i = Constant i
 let plus a b = sum [a;b]

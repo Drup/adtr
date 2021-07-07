@@ -111,19 +111,18 @@ let check_conflict p1 p2 =
        Z3Regex.(in_re s (inter [re1;re2]))
       )
   in
-  Fmt.epr
-    "@[<v2>Formula for conflict between@ %a@ %a"
-    Path.pp p1 Path.pp p2
-  ;
-  Fmt.epr
-    ":@ %s@;<-2>Simplified:@ %s"
-    (T.to_string formula)
-    (T.to_string @@ T.simplify formula)
-  ;
-  Fmt.epr "@]@.";
+  (* Fmt.epr
+   *   "@[<v2>Formula for conflict between@ %a@ %a"
+   *   Path.pp p1 Path.pp p2
+   * ;
+   * Fmt.epr
+   *   ":@ %s@;<-2>Simplified:@ %s"
+   *   (T.to_string formula)
+   *   (T.to_string @@ T.simplify formula)
+   * ;
+   * Fmt.epr "@]@."; *)
   begin match Solver.(check ~solver:(make ()) [formula]) with
     | Sat _model ->
-      Fmt.epr "Sat@.@.";
       let e = Path.overlap p1 p2 in
       if e = Constraint.True then 
         Some Constraint.(poly1 === poly2)
@@ -132,6 +131,5 @@ let check_conflict p1 p2 =
     | Unkown _ ->
       Some Constraint.False
     | Unsat _ ->
-      Fmt.epr "UnSat@.@.";
       None
   end 

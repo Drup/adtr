@@ -138,7 +138,7 @@ let rec overlap_one_mult (prefix1,{ index; mov; suffix },wild1) (prefix2,wild2) 
 
 let overlap_two_mult (prefix1, mult1, wild1) (mult2, wild2) =
   match prefix1, mult1, mult2 with
-  | (_,
+  | (List.[],
      { index = idx1; mov = mov1; suffix = suffix1 },
      { index = idx2; mov = mov2; suffix = suffix2 })
     when equal_field mov1 mov2 ->
