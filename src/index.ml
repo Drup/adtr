@@ -4,6 +4,12 @@ type t =
   | Sum of t list
   | Product of t list
 
+let rec refresh_name = function
+  | Var n -> Var (n ^"'")
+  | Constant i -> Constant i
+  | Sum l -> Sum (List.map refresh_name l)
+  | Product l -> Product (List.map refresh_name l)
+
 let rec simplify = function
   | Var _ 
   | Constant _ as e -> e
@@ -13,13 +19,12 @@ let rec simplify = function
 and sum l0 = 
   let rec aux ~constant ~others = function
     | [] ->
-      if constant = 0 then
-        begin match others with
-          | [e] -> e
-          | l -> Sum l
-        end
-      else
-        Sum (others @ [Constant constant])
+      begin match others, constant with
+        | [], c -> Constant c
+        | [e], 0 -> e
+        | l, 0 -> Sum l
+        | l, c -> Sum (l @ [Constant c])
+      end
     | h :: t ->
       begin match simplify h with
         | Var _ | Product _ as e ->
@@ -39,6 +44,7 @@ and product l0 =
     | [] ->
       if constant = 1 then
         begin match others with
+          | [] -> Constant constant
           | [e] -> e
           | l -> Product l
         end

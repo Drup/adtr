@@ -96,13 +96,18 @@ module Layer = struct
 
   type t = Path.t
   let pp = Path.pp
+             
+  type conflict = Constraint.t
+  let pp_conflict fmt = function
+    | Constraint.False -> ()
+    | c -> Constraint.pp fmt c
+  let default : conflict = Constraint.False
 
-  let conflict mem1 mem2 =
-    (* if Path.overlap mem1 mem2 then Some Path.empty else None *)
-    None
+  let conflict p1 p2 : conflict option =
+    Encode2SMT.check_conflict p1 p2
 
-  let one (fields, mult) : Path.t = Path.simplify [ fields ; mult]
-  let many k (fields, mult) : Path.t = Path.simplify [ fields ; mult ; k]
+  let one (fields, mult) : Path.t = [ fields ; mult]
+  let many k (fields, mult) : Path.t = [ fields ; mult ; k]
 end
 
 
@@ -285,9 +290,4 @@ module WithField = DepGraph(struct
       Field.conflict p1 p2 |> CCOpt.map snd
   end)
 
-module WithPath = DepGraph(struct
-    include Layer
-    type conflict = Path.t
-    let pp_conflict = Path.pp
-    let default = Path.empty
-  end)
+module WithPath = DepGraph(Layer)

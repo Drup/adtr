@@ -4,12 +4,28 @@ type mult_field = {
   suffix : Field.t ;
 }
 
-and t = [] | (::) of Field.t * mult
+let equal_field l1 l2 =
+  CCList.equal
+    (fun (f1 : Field.field) f2 -> f1.pos = f2.pos && Types.equal f1.ty f2.ty)
+    l1 l2
+
+
+type t = [] | (::) of Field.t * mult
 and mult = [] | (::) of mult_field option * layers
 and layers = [] | (::) of Index.t * stop
 and stop = []
 
 type path = t
+
+let refresh : t -> t = function
+  | [ x ; Some ({ index ; _ } as mult) ; idx2 ] ->
+    [ x ; Some {mult with index = Index.refresh_name index} ;
+      Index.refresh_name idx2 ]
+  | [ x ; Some ({ index ; _ } as mult) ] ->
+    [ x ; Some {mult with index = Index.refresh_name index} ]
+  | [ x ; None ; idx2 ] ->
+    [ x ; None ; Index.refresh_name idx2 ]
+  | l -> l
 
 let empty : t = []
 let down ty pos : t = [{Field. ty; pos}] :: []
@@ -44,7 +60,7 @@ let simplify (p : t) =
 
 
 
-let rec pp fmt (c: path) = match c with
+let rec pp fmt (c: path) = match simplify c with
   | [] -> Fmt.pf fmt "[]"
   | f :: t -> Field.pp fmt f; pp_mult fmt t
 and pp_mult fmt = function
@@ -63,21 +79,7 @@ and pp_layer fmt = function
   | index :: [] ->
     Fmt.pf fmt ".φ^%a" Index.pp_parens index
 
-
-module Constr = struct
-  type t =
-    | True
-    | False
-    | Constr of (Index.t * Index.t)
-    | And of t list
-    | Or of t list
-  let (===) x1 x2 = Constr (x1,x2)
-  let tt = True
-  let ff = False
-  let (|||) x1 x2 = Or [x1;x2]
-  let (&&&) x1 x2 = And [x1;x2]
-end
-open Constr
+open Constraint
 
 let len l = Index.const @@ List.length l
 let len_layer : layers -> _ =
@@ -102,36 +104,7 @@ let is_nullable = function
   | _ :: Some { suffix = (_::_) } :: _
     -> ff
 
-let rec overlap (p1:path) (p2:path) = match p1, p2 with
-  (* Both are empty *)
-  | ([] | [[]] | [ [] ; None ]),
-    ([] | [[]] | [ [] ; None ]) -> tt
-  (* One of them is empty *)
-  | l, ([] | [[]] | [ [] ; None ])
-  | ([] | [[]] | [ [] ; None ]), l
-    -> is_nullable l
-  (* Without multiple, but potentially with wildcards *)
-  | l1::None::rest1 , l2::None::rest2 -> overlap_no_mult (l1,rest1) (l2, rest2)
-  | l1::None::rest1 , l2::[]          -> overlap_no_mult (l1,rest1) (l2, [])
-  | l1::[]          , l2::None::rest2 -> overlap_no_mult (l1,[]) (l2, rest2)
-  | l1::[]          , l2::[]          -> overlap_no_mult (l1,[]) (l2, [])
-  (* With multiple on one side *)
-  | l1::Some mult1 :: rest1, l2 :: None :: rest2
-  | l2 :: None :: rest2, l1::Some mult1 :: rest1
-    -> overlap_one_mult (l1, mult1, rest1) (l2,rest2)
-  | l1::Some mult1 :: rest1, l2 :: []
-  | l2 :: [], l1::Some mult1 :: rest1
-    -> overlap_one_mult (l1, mult1, rest1) (l2,[])
-  (* With multiple on both side *)
-  | l1::(Some mult1)::wild1, l2::(Some mult2)::wild2 ->
-    match Field.conflict l1 l2 with
-    | None -> ff
-    | Some ((`eq|`left), m) ->
-      overlap_two_mult (m,mult2,wild2) (mult1, wild1)
-    | Some (`right, m) ->
-      overlap_two_mult (m,mult1,wild1) (mult2, wild2)
-
-and overlap_no_mult (prefix1,wild1) (prefix2,wild2) =
+let overlap_no_mult (prefix1,wild1) (prefix2,wild2) =
   match Field.conflict prefix1 prefix2 with
   | None -> ff
   | Some _ -> 
@@ -139,7 +112,7 @@ and overlap_no_mult (prefix1,wild1) (prefix2,wild2) =
       len_layer wild1 + len prefix1 === len_layer wild2 + len prefix2
     )
 
-and overlap_one_mult (prefix1,{ index; mov; suffix },wild1) (prefix2,wild2) =
+let rec overlap_one_mult (prefix1,{ index; mov; suffix },wild1) (prefix2,wild2) =
   match Field.conflict prefix1 prefix2 with
   | None -> ff
   | Some (`eq, _) ->
@@ -163,5 +136,43 @@ and overlap_one_mult (prefix1,{ index; mov; suffix },wild1) (prefix2,wild2) =
     in
     b1 ||| b2
 
-and overlap_two_mult (prefix1, mult1, wild1) (mult2, wild2) =
-  assert false
+let overlap_two_mult (prefix1, mult1, wild1) (mult2, wild2) =
+  match prefix1, mult1, mult2 with
+  | (_,
+     { index = idx1; mov = mov1; suffix = suffix1 },
+     { index = idx2; mov = mov2; suffix = suffix2 })
+    when equal_field mov1 mov2 ->
+    (idx1 === idx2) &&&
+    Index.(len suffix1 + len_layer wild1 === len suffix2 + len_layer wild2)
+  | _ -> True
+
+let overlap (p1:path) (p2:path) = match simplify p1, simplify p2 with
+  (* Both are empty *)
+  | ([] | [[]] | [ [] ; None ]),
+    ([] | [[]] | [ [] ; None ]) -> tt
+  (* One of them is empty *)
+  | l, ([] | [[]] | [ [] ; None ])
+  | ([] | [[]] | [ [] ; None ]), l
+    -> is_nullable l
+  (* Without multiple, but potentially with wildcards *)
+  | l1::None::rest1 , l2::None::rest2 -> overlap_no_mult (l1,rest1) (l2, rest2)
+  | l1::None::rest1 , l2::[]          -> overlap_no_mult (l1,rest1) (l2, [])
+  | l1::[]          , l2::None::rest2 -> overlap_no_mult (l1,[]) (l2, rest2)
+  | l1::[]          , l2::[]          -> overlap_no_mult (l1,[]) (l2, [])
+  (* With multiple on one side *)
+  | l1::Some mult1 :: rest1, l2 :: None :: rest2
+  | l2 :: None :: rest2, l1::Some mult1 :: rest1
+    -> overlap_one_mult (l1, mult1, rest1) (l2,rest2)
+  | l1::Some mult1 :: rest1, l2 :: []
+  | l2 :: [], l1::Some mult1 :: rest1
+    -> overlap_one_mult (l1, mult1, rest1) (l2,[])
+  (* With multiple on both side *)
+  | []::(Some mult1)::wild1, []::(Some mult2)::wild2 ->
+    overlap_two_mult (Field.empty,mult1,wild1) (mult2, wild2)
+  | l1::(Some mult1)::wild1, l2::(Some mult2)::wild2 ->
+    match Field.conflict l1 l2 with
+    | None -> ff
+    | Some ((`eq|`left), m) ->
+      overlap_two_mult (m,mult2,wild2) (mult1, wild1)
+    | Some (`right, m) ->
+      overlap_two_mult (m,mult1,wild1) (mult2, wild2)
