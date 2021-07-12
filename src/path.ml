@@ -119,9 +119,17 @@ let length p =
 
 open Constraint
 
+(** Computation of D_m, the polyhedron of the domain of a paths. *)
 module Domain = struct
 
-
+  let make hvar p =
+    let l = length p in
+    (Index.const 0 ==< l) &&&
+    (l ==< hvar) &&&
+    Name.Set.fold
+      (fun k f -> (Index.const 0 ==< Index.var k) &&& f)
+      (vars p)
+      tt
 
 end
 

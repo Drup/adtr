@@ -1,7 +1,7 @@
 (library
  (name        adtr)
  (modules :standard \ main)
- (libraries   containers containers.unix peahell ocamlgraph z3overlay)
+ (libraries   containers containers.unix peahell ocamlgraph z3overlay iter)
  (flags -open Peahell)
 )
 

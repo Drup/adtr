@@ -1,10 +1,12 @@
 type var = Name.t 
 
-type monome = Name.t * int
-type t = {
-  monomes : monome list ;
-  constant : int ;
+type 'a monome = Name.t * 'a
+type 'a index = {
+  monomes : 'a monome list ;
+  constant : 'a ;
 }
+type t = int index
+
 
 let refresh_name p =
   let monomes =
@@ -25,18 +27,28 @@ let map_factors f { monomes; constant } =
   let monomes = List.map (fun (var, fact) -> (var, f fact)) monomes in
   {constant;monomes}
 
-let plus e1 e2 =
-  let constant = e1.constant + e2.constant in
+let on_constant f { monomes; constant } =
+  let constant = f constant in
+  {constant;monomes}
+
+let map2 f e1 e2 =
+  let constant = f e1.constant e2.constant in
   let monomes =
     monomes_of_map @@
-    Name.Map.union (fun _ i1 i2 -> Some (i1 + i2))
+    Name.Map.union (fun _ i1 i2 -> Some (f i1 i2))
     (map_of_monomes e1.monomes)
     (map_of_monomes e2.monomes)
   in
   {constant;monomes}
 
+let eval f { monomes; constant } =
+  List.fold_left (fun r (n,k) -> f n * k + r) constant monomes
+
+let plus e1 e2 = map2 (+) e1 e2
+
 let const constant = { monomes = [] ; constant }
 let zero = const 0
+let sum l = List.fold_left plus zero l
 
 let mult k e =
   if k = 0 then const 0
@@ -45,6 +57,8 @@ let mult k e =
 let ( * ) k v = if k = 0 then const 0 else { monomes = [v, k] ; constant = 0 }
 let ( + ) = plus
 let ( *@ ) = mult
+let (~- ) x = -1 *@ x
+let ( - ) x1 x2 = x1 + (- x2) 
 
 let var v = 1 * v
 

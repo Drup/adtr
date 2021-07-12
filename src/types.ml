@@ -123,3 +123,21 @@ let rec instantiate_data_constructor_with_subst tyenv subst constructor ty =
 
 let instantiate_data_constructor tyenv constructor ty =
   instantiate_data_constructor_with_subst tyenv Subst.empty constructor ty
+
+let complement tyenv ty0 (fields0 : Field.t) =
+  let rec aux prev_ty curr_fields = function
+    | [] -> [], []
+    | {Field. ty; pos} as f :: path ->
+      let all_fields = get_definition tyenv prev_ty in
+      let compl_paths =
+        CCList.sort_uniq ~cmp:Stdlib.compare @@
+        CCList.filter_map
+          (fun (_constr',f') ->
+             if f = f' then None
+             else Some (Field.(curr_fields +/ f'), f'.ty))
+          all_fields
+      in
+      let curr_fields', compl_paths' = aux ty Field.(curr_fields +/ f) path in
+      curr_fields :: curr_fields', compl_paths @ compl_paths'
+  in
+  aux ty0 Field.empty fields0

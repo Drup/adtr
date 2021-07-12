@@ -41,7 +41,13 @@ include Peahell.Make(struct
           (* Peahell.Report.printf "%a@." (Rewrite.pp Field.pp) cursor_moves; *)
           let mem_moves = Rewrite.subtree2layer tyenv cursor_moves in
           Peahell.Report.printf "%a@." (Rewrite.pp Rewrite.Layer.pp) mem_moves;
-          if !show_depgraph then List.iter Rewrite.WithPath.create_and_show mem_moves.clauses ;
+          mem_moves.clauses |> List.iter (fun clause ->
+              let g = Rewrite.WithLayer.create clause in
+              let _s = Scheduling.mk_schedule1D g in
+              if !show_depgraph then
+                Rewrite.WithLayer.show g ;
+              ()
+            );
           tyenv        
       in
       List.fold_left f tyenv0 l

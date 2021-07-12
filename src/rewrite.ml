@@ -67,27 +67,13 @@ let pp pp_mem fmt
 
 module Subtree = struct
 
-  let conflict pos1 pos2 = match pos1, pos2 with
-    | Internal p1, Internal p2 -> Field.conflict p1 p2
-    | _ -> None
-
-  let complement tyenv ty0 (fields0 : Field.t) =
-    let rec aux prev_ty curr_fields = function
-      | [] -> [], []
-      | {Field. ty; pos} as f :: path ->
-        let all_fields = Types.get_definition tyenv prev_ty in
-        let compl_paths =
-          CCList.sort_uniq ~cmp:Stdlib.compare @@
-          CCList.filter_map
-            (fun (_constr',f') ->
-               if f = f' then None
-               else Some (Field.(curr_fields +/ f'), f'.ty))
-            all_fields
-        in
-        let curr_fields', compl_paths' = aux ty Field.(curr_fields +/ f) path in
-        curr_fields :: curr_fields', compl_paths @ compl_paths'
-    in
-    aux ty0 Field.empty fields0
+  include Field
+  type conflict = Field.t
+  let pp_conflict = Field.pp
+  let default = Field.empty
+  let conflict p1 p2 =
+    Field.conflict p1 p2 |> CCOpt.map snd
+  let pp_extra = Fmt.nop
 
 end
 
@@ -96,8 +82,16 @@ module Layer = struct
 
   type t = Path.t
   let pp = Path.pp
+  let pp_extra fmt x =
+    let v = Index.var "N" in
+    let mk_formula = function
+      | Absent | External -> Constraint.tt
+      | Internal p -> Path.Domain.make v p
+    in
+    let f = Constraint.(mk_formula x.src &&& mk_formula x.dest) in
+    Fmt.pf fmt "@.@[<hov>%a@]" Constraint.pp f
              
-  type conflict = Constraint.t
+  type conflict = int Constraint.t
   let pp_conflict fmt = function
     | Constraint.False -> ()
     | c -> Constraint.pp fmt c
@@ -116,6 +110,10 @@ let subtree2layer tyenv (r : Field.t t) =
   let transl_movement_scalar mov : Path.t movement list =
     [map_movement Layer.one mov]
   in
+  let conflict pos1 pos2 = match pos1, pos2 with
+    | Internal p1, Internal p2 -> Field.conflict p1 p2
+    | _ -> None
+  in
   let transl_movement_no_conflict mov =
     (* INVARIANT: src and dest are not conflicting *)
     if Types.is_scalar mov.ty then
@@ -131,7 +129,7 @@ let subtree2layer tyenv (r : Field.t t) =
       let f = map_movement (fun l -> (l, None)) f in
       transl_movement_scalar f
     else
-      match Subtree.conflict src dest with
+      match conflict src dest with
       | Some (_, mov) ->
         (* Report.infof "Rewrite"
          *   "@[%a ⋈ %a = %a@]@."
@@ -140,7 +138,7 @@ let subtree2layer tyenv (r : Field.t t) =
          *   Cursor.pp vector; *)
         let index = Index.var @@ Name.fresh "k" in
         let cell_suffixes, cursor_suffixes =
-          Subtree.complement tyenv ty mov
+          Types.complement tyenv ty mov
         in
         (** TODO We should try harder to assert that all those path suffixes are 
             non-conflicting *)
@@ -192,6 +190,7 @@ let subtree2layer tyenv (r : Field.t t) =
 module type MEM = sig
   type t
   val pp : t Fmt.t
+  val pp_extra : t movement Fmt.t
   
   type conflict
   val pp_conflict : conflict Fmt.t
@@ -214,6 +213,8 @@ module DepGraph (Mem : MEM) = struct
   end
   module G = Graph.Persistent.Digraph.ConcreteLabeled(Vertex)(Edge)
   include G
+  module V = struct include V module Map = CCMap.Make(V) end
+  module E = struct include E module Map = CCMap.Make(E) end
 
   let conflict pos1 pos2 = match pos1, pos2 with
     | Internal p1, Internal p2 -> Mem.conflict p1 p2
@@ -238,22 +239,21 @@ module DepGraph (Mem : MEM) = struct
           ) g moves
       ) empty moves
 
-  module Dot = struct
-    module G = struct
+  module Dot = Graph.Graphviz.Dot(struct
       include G
-          
       let graph_attributes _g = [ `Rankdir `LeftToRight ]
       let default_vertex_attributes _g = []
       let vertex_name def =
         Fmt.strf "\"%s:%a\"" def.name Printer.types def.ty
-      let vertex_attributes {name;src;dest;ty} =
+      let vertex_attributes ({name;src;dest;ty} as x) =
         let shape =
           if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box
         in
         let label =
-          Fmt.str "%a\n%a\n%a → %a"
+          Fmt.str "%a\n%a\n%a → %a%a"
             Name.pp name Printer.types ty
             (pp_position Mem.pp) src (pp_position Mem.pp) dest
+            Mem.pp_extra x
         in
         [shape; `Label label]
       let default_edge_attributes _g = []
@@ -263,10 +263,7 @@ module DepGraph (Mem : MEM) = struct
         [ `Label label;
         ]
       let get_subgraph _v = None
-    end
-
-    include Graph.Graphviz.Dot(G)
-  end
+    end)
   let pp_dot = Dot.fprint_graph
 
   let show g =
@@ -281,13 +278,5 @@ module DepGraph (Mem : MEM) = struct
     if not @@ is_empty g then show g
 end
 
-module WithField = DepGraph(struct
-    include Field
-    type conflict = Field.t
-    let pp_conflict = Field.pp
-    let default = Field.empty
-    let conflict p1 p2 =
-      Field.conflict p1 p2 |> CCOpt.map snd
-  end)
-
-module WithPath = DepGraph(Layer)
+module WithSubtree = DepGraph(Subtree)
+module WithLayer = DepGraph(Layer)

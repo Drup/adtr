@@ -1,18 +1,18 @@
-type ineq =
-  | Eq of (Index.t * Index.t)
-  | Leq of (Index.t * Index.t)
+type 'a ineq =
+  | Eq of ('a Index.index * 'a Index.index)
+  | Leq of ('a Index.index * 'a Index.index)
 
-type t =
+type 'a t =
   | True
   | False
-  | Constr of ineq
-  | And of t list
-  | Or of t list
+  | Constr of 'a ineq
+  | And of 'a t list
+  | Or of 'a t list
 
 let tt = True
 let ff = False
   
-let (===) (x1 : Index.t) (x2 : Index.t) =
+let (===) (x1 : _ Index.index) (x2 : _ Index.index) =
   match x1, x2 with
   | x1, x2 when x1 = x2 -> tt
   | {constant = i1; monomes = []}, {constant = i2; monomes = []} ->
@@ -21,6 +21,16 @@ let (===) (x1 : Index.t) (x2 : Index.t) =
     let i1 = Index.min x1 and i2 = Index.min x2 in
     let c = Index.const (- (min i1 i2)) in
     Constr (Eq Index.(x1 + c, x2 + c))
+
+let (==<) (x1 : _ Index.index) (x2 : _ Index.index) =
+  match x1, x2 with
+  | x1, x2 when x1 = x2 -> tt
+  | {constant = i1; monomes = []}, {constant = i2; monomes = []} ->
+    if i1 <= i2 then tt else ff
+  | x1, x2 -> 
+    let i1 = Index.min x1 and i2 = Index.min x2 in
+    let c = Index.const (- (min i1 i2)) in
+    Constr (Leq Index.(x1 + c, x2 + c))
 
 let (|||) x1 x2 = match x1, x2 with
   | True, x | x, True -> True
@@ -35,6 +45,9 @@ let (&&&) x1 x2 = match x1, x2 with
   | And l, x | x, And l -> And (x :: l)
   | x1, x2 -> And [x1;x2]
 
+let and_ l = List.fold_left (&&&) tt l
+let or_ l = List.fold_left (|||) ff l
+
 let pp_ineq fmt = function
   | Eq (i1, i2) -> Fmt.pf fmt "%a = %a" Index.pp i1 Index.pp i2
   | Leq (i1, i2) -> Fmt.pf fmt "%a ≤ %a" Index.pp i1 Index.pp i2
@@ -48,3 +61,4 @@ let rec pp fmt = function
 and pp_paren fmt = function
   | True | False as c -> pp fmt c
   | c -> Fmt.parens pp fmt c
+

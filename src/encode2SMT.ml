@@ -13,6 +13,16 @@ let rec index2smt h ({ monomes; constant } : Index.t) =
   in
   T.add (T.int constant :: List.map mk_monome monomes)
 
+let rec constraint2smt h : _ Constraint.t -> _ = function
+  | Constr (Eq (e1, e2)) ->
+    T.(index2smt h e1 = index2smt h e2)
+  | Constr (Leq (e1, e2)) ->
+    T.(index2smt h e1 <= index2smt h e2)
+  | And v -> T.and_ @@ List.map (constraint2smt h) v
+  | Or v -> T.or_ @@ List.map (constraint2smt h) v
+  | True -> T.true_
+  | False -> T.false_
+
 let sort = (Seq (Bitvector 8))
 let decl_word base = Symbol.declare sort (Name.fresh base)
 
