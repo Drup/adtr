@@ -21,7 +21,10 @@ depends: [
   "menhir"
   "ocamlgraph"
   "peahell"
+  "iter"
+  "z3overlay"
 ]
 pin-depends: [
-  "peahell.0.1" "git://github.com/Drup/peahell/"
+  ["peahell.0.1" "git://github.com/Drup/peahell/"]
+  ["z3overlay.0.1" "git://github.com/termite-analyser/z3overlay/"]
 ]
