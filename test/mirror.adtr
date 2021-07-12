@@ -7,8 +7,8 @@ mirror (t:tree) : tree = rewrite t {
 (*EXPECT
 mirror (t : tree) : tree = rewrite t {
   | 
-  | (a:tree | .tree@0.φ^k0 → .tree@2.φ^k0)
-    (b:tree | .tree@2.φ^k1 → .tree@0.φ^k1)
+  | (a:tree | .tree@0.φ^k₀ → .tree@2.φ^k₀)
+    (b:tree | .tree@2.φ^k₁ → .tree@0.φ^k₁)
 }
 
 *)
@@ -21,9 +21,9 @@ mirror2 (t:tree) : tree = rewrite t {
 
 mirror2 (t : tree) : tree = rewrite t {
   | 
-  | (a:tree | .tree@0.φ^k2 → .tree@2.φ^k2)
-    (b1:tree | .tree@2.tree@0.φ^k3 → .tree@0.tree@2.φ^k3)
-    (b2:tree | .tree@2.tree@2.φ^k4 → .tree@0.tree@0.φ^k4)
+  | (a:tree | .tree@0.φ^k₂ → .tree@2.φ^k₂)
+    (b1:tree | .tree@2.tree@0.φ^k₃ → .tree@0.tree@2.φ^k₃)
+    (b2:tree | .tree@2.tree@2.φ^k₄ → .tree@0.tree@0.φ^k₄)
     (j:int | .tree@2.int@1 → .tree@0.int@1)
 }
 
@@ -38,10 +38,10 @@ mirror3 (t:tree) : tree = rewrite t {
 
 mirror3 (t : tree) : tree = rewrite t {
   | 
-  | (a1:tree | .tree@0.tree@0.φ^k5 → .tree@2.tree@2.φ^k5)
-    (a2:tree | .tree@0.tree@2.φ^k6 → .tree@2.tree@0.φ^k6)
-    (b1:tree | .tree@2.tree@0.φ^k7 → .tree@0.tree@2.φ^k7)
-    (b2:tree | .tree@2.tree@2.φ^k8 → .tree@0.tree@0.φ^k8)
+  | (a1:tree | .tree@0.tree@0.φ^k₅ → .tree@2.tree@2.φ^k₅)
+    (a2:tree | .tree@0.tree@2.φ^k₆ → .tree@2.tree@0.φ^k₆)
+    (b1:tree | .tree@2.tree@0.φ^k₇ → .tree@0.tree@2.φ^k₇)
+    (b2:tree | .tree@2.tree@2.φ^k₈ → .tree@0.tree@0.φ^k₈)
     (ia:int | .tree@0.int@1 → .tree@2.int@1)
     (ib:int | .tree@2.int@1 → .tree@0.int@1)
 }
@@ -58,9 +58,9 @@ mirror (t:tree3) : tree3 = rewrite t {
 
 mirror (t : tree3) : tree3 = rewrite t {
   | 
-  | (a:tree | .tree@0.φ^k9 → .tree@1.φ^k9)
-    (b:tree | .tree@1.φ^k10 → .tree@2.φ^k10)
-    (c:tree | .tree@2.φ^k11 → .tree@0.φ^k11)
+  | (a:tree | .tree@0.φ^k₉ → .tree@1.φ^k₉)
+    (b:tree | .tree@1.φ^k₁₀ → .tree@2.φ^k₁₀)
+    (c:tree | .tree@2.φ^k₁₁ → .tree@0.φ^k₁₁)
 }
 
 *)

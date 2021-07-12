@@ -81,8 +81,8 @@ let positivity_constraints g =
         Name.pp name
         (Fmt.list Index.pp) system
         ;
-      let lamVec = List.map (fun _ -> Name.fresh ("λ" ^ name ^ "/")) system in
-      let lam0 = Name.fresh ("λ0" ^ name ^ "/") in
+      let lamVec = List.map (fun _ -> Name.fresh ("λ" ^ name)) system in
+      let lam0 = Name.fresh ("λ0" ^ name) in
       let lf = LF.wrap ~multipliers:lamVec ~const:lam0 system in
       Fmt.epr "@[<v2>σ(%a) =@ %a@]@."
         Name.pp name
@@ -99,11 +99,11 @@ let increasing_constraints sigmas g =
         Name.pp src.name Name.pp dest.name
         (Fmt.list Index.pp) system
         ;
-      let muVec = List.map (fun _ -> Name.fresh ("μ/")) system in
-      let mu0 = Name.fresh ("μ0/") in
+      let muVec = List.map (fun _ -> Name.fresh ("μ")) system in
+      let mu0 = Name.fresh ("μ0") in
       let lf1 = LF.wrap ~multipliers:muVec ~const:mu0 system in
 
-      let epsilon = Name.fresh ("ε/") in
+      let epsilon = Name.fresh ("ε") in
       let sigma_src = G.V.Map.find src sigmas in
       let sigma_dest = Index.refresh_name @@ G.V.Map.find dest sigmas in
       let lf2 = LF.(sigma_dest - sigma_src - constvar epsilon) in

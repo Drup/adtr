@@ -4,5 +4,9 @@ f (x : foo) : foo = rewrite x {
   | A (t) -> t
 }
 (*EXPECT
+f (x : foo) : foo = rewrite x {
+  | (t[]:foo | .foo@0^(k₀ + 1) → .foo@0^k₀)
+}
 
 *)
+

@@ -5,13 +5,13 @@ pull_up (t:tree) : tree = rewrite t {
 }
 (*EXPECT
 pull_up (t : tree) : tree = rewrite t {
-  | (a:tree | .tree@0.φ^k0 → ø)
-    (b:tree | .tree@1.tree@0.φ^k1 → .tree@0.φ^k1)
-    (c[]:tree | .tree@1^(k2 + 2) → .tree@1^(k2 + 1))
-    (c.int@0:int | .tree@1^(k2 + 2).int@0 → .tree@1^(k2 + 1).int@0)
+  | (a:tree | .tree@0.φ^k₀ → ø)
+    (b:tree | .tree@1.tree@0.φ^k₁ → .tree@0.φ^k₁)
+    (c[]:tree | .tree@1^(k₂ + 2) → .tree@1^(k₂ + 1))
+    (c.int@0:int | .tree@1^(k₂ + 2).int@0 → .tree@1^(k₂ + 1).int@0)
     (c.tree@0:tree |
-     .tree@1^(k2 + 2).tree@0.φ^k3 →
-     .tree@1^(k2 + 1).tree@0.φ^k3)
+     .tree@1^(k₂ + 2).tree@0.φ^k₃ →
+     .tree@1^(k₂ + 1).tree@0.φ^k₃)
 }
 
 *)
