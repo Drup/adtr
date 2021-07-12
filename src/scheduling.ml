@@ -106,7 +106,7 @@ let increasing_constraints sigmas g =
       let epsilon = Name.fresh ("ε/") in
       let sigma_src = G.V.Map.find src sigmas in
       let sigma_dest = Index.refresh_name @@ G.V.Map.find dest sigmas in
-      let lf2 = LF.(sigma_src - sigma_dest - constvar epsilon) in
+      let lf2 = LF.(sigma_dest - sigma_src - constvar epsilon) in
       Fmt.epr "@[<v2>Eq_(%a,%a):@ %a@ =@ %a@]@."
         Name.pp src.name Name.pp dest.name
         LF.pp lf2 LF.pp lf1
@@ -180,6 +180,7 @@ let solve_with_smt constraints optims =
   in
   begin match res with
     | Sat (lazy model) ->
+      Fmt.epr "@[<v2>Model:@ %s@." (Z3.Model.to_string model);
       let f v =
         Z.to_int @@
         Encode2SMT.ZZ.Model.get_value ~model @@
