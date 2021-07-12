@@ -12,6 +12,8 @@ let refresh_name p =
   in 
   { p with monomes }
 
+let vars x = List.map fst x.monomes |> Name.Set.of_list
+
 let map_of_monomes l =
   Name.Map.of_list l
 let monomes_of_map m =

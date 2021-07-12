@@ -89,7 +89,6 @@ let path2smt s0 p =
     List.map (fun x -> T.(!x >= int 0)) @@ H.values_list vars 
   in
   concat_re re,
-  poly,
   T.((Z3Seq.concat s = s0) &&
      (index2smt vars poly = Z3Seq.length s0) &&
      and_ formula &&
@@ -98,8 +97,8 @@ let path2smt s0 p =
 let check_conflict p1 p2 =
   let p2 = Path.refresh p2 in
   let s = T.symbol @@ decl_word "s" in
-  let re1, poly1, formula1 = path2smt s p1 in
-  let re2, poly2, formula2 = path2smt s p2 in
+  let re1, formula1 = path2smt s p1 in
+  let re2, formula2 = path2smt s p2 in
   let formula =
     T.(formula1 && formula2 &&
        Z3Regex.(in_re s (inter [re1;re2]))
@@ -117,11 +116,8 @@ let check_conflict p1 p2 =
    * Fmt.epr "@]@."; *)
   begin match Solver.(check ~solver:(make ()) [formula]) with
     | Sat _model ->
-      let e = Path.overlap p1 p2 in
-      if e = Constraint.True then 
-        Some Constraint.(poly1 === poly2)
-      else
-        Some e
+      let e = Path.Dependencies.make p1 p2 in
+      Some e
     | Unkown _ ->
       Some Constraint.False
     | Unsat _ ->

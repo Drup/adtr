@@ -1,7 +1,11 @@
+type ineq =
+  | Eq of (Index.t * Index.t)
+  | Leq of (Index.t * Index.t)
+
 type t =
   | True
   | False
-  | Constr of (Index.t * Index.t)
+  | Constr of ineq
   | And of t list
   | Or of t list
 
@@ -16,7 +20,7 @@ let (===) (x1 : Index.t) (x2 : Index.t) =
   | x1, x2 -> 
     let i1 = Index.min x1 and i2 = Index.min x2 in
     let c = Index.const (- (min i1 i2)) in
-    Constr Index.(x1 + c, x2 + c)
+    Constr (Eq Index.(x1 + c, x2 + c))
 
 let (|||) x1 x2 = match x1, x2 with
   | True, x | x, True -> True
@@ -31,10 +35,14 @@ let (&&&) x1 x2 = match x1, x2 with
   | And l, x | x, And l -> And (x :: l)
   | x1, x2 -> And [x1;x2]
 
+let pp_ineq fmt = function
+  | Eq (i1, i2) -> Fmt.pf fmt "%a = %a" Index.pp i1 Index.pp i2
+  | Leq (i1, i2) -> Fmt.pf fmt "%a ≤ %a" Index.pp i1 Index.pp i2
+
 let rec pp fmt = function
   | True -> Fmt.pf fmt "true"
   | False -> Fmt.pf fmt "false"
-  | Constr (i1, i2) -> Fmt.pf fmt "%a = %a" Index.pp i1 Index.pp i2
+  | Constr ineq -> pp_ineq fmt ineq
   | And l -> Fmt.list ~sep:(Fmt.unit " ∧@ ") pp_paren fmt l
   | Or l -> Fmt.list ~sep:(Fmt.unit " ∨@ ") pp_paren fmt l
 and pp_paren fmt = function
