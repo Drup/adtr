@@ -1,17 +1,20 @@
-type tree = Leaf (int) | Node (tree,tree)
+type tree = Leaf (int) | Node (tree,int,tree)
 
 pull_up (t:tree) : tree = rewrite t {
- | Node(a,Node(b,c)) -> Node(b,c)
+ | Node(a,i,Node(b,j,c)) -> Node(b,j,c)
 }
 (*EXPECT
 pull_up (t : tree) : tree = rewrite t {
   | (a:tree | .tree@0.φ^k₀ → ø)
-    (b:tree | .tree@1.tree@0.φ^k₁ → .tree@0.φ^k₁)
-    (c[]:tree | .tree@1^(k₂ + 2) → .tree@1^(k₂ + 1))
-    (c.int@0:int | .tree@1^(k₂ + 2).int@0 → .tree@1^(k₂ + 1).int@0)
+    (b:tree | .tree@2.tree@0.φ^k₁ → .tree@0.φ^k₁)
+    (c[]:tree | .tree@2^(k₂ + 2) → .tree@2^(k₂ + 1))
+    (c.int@0:int | .tree@2^(k₂ + 2).int@0 → .tree@2^(k₂ + 1).int@0)
+    (c.int@1:int | .tree@2^(k₂ + 2).int@1 → .tree@2^(k₂ + 1).int@1)
     (c.tree@0:tree |
-     .tree@1^(k₂ + 2).tree@0.φ^k₃ →
-     .tree@1^(k₂ + 1).tree@0.φ^k₃)
+     .tree@2^(k₂ + 2).tree@0.φ^k₃ →
+     .tree@2^(k₂ + 1).tree@0.φ^k₃)
+    (i:int | .int@1 → ø)
+    (j:int | .tree@2.int@1 → .int@1)
 }
 
 *)
