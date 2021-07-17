@@ -193,16 +193,48 @@ let solve_with_smt constraints optims =
       None
   end 
 
-let mk_schedule1D g =
-  let formula, epsilons, sigmas = make_constraints g in
+let compute_schedule f sigmas =
+  G.V.Map.map (LF.instanciate f) sigmas
+
+let find_unconsumed_epsilons f epsilons =
+  G.E.Map.filter (fun _ eps -> f eps = 0) epsilons
+
+let mk_schedule1D formula sigmas epsilons =
   let max_criterion = mk_max_criterion epsilons in
   match solve_with_smt formula max_criterion with
   | None ->
     Fmt.epr "No schedule@.";
     None
   | Some f ->
-    let sched = G.V.Map.map (LF.instanciate f) sigmas in
-    Fmt.epr "@[<v2>Schedule:@ %a@]@."
-      (G.V.Map.pp (fun fmt v -> Name.pp fmt v.name) Index.pp) sched;
-    Some sched
-    
+    let sched1D = compute_schedule f sigmas in
+    let new_epsilons = find_unconsumed_epsilons f epsilons in
+    Some (sched1D, new_epsilons)
+
+let add_schedule sched1D sched =
+  let merge1 _ x l = match x, l with
+    | None, _ | _, None -> assert false
+    | Some x, Some l -> Some (x::l)
+  in
+  G.V.Map.merge merge1 sched1D sched
+
+let mk_schedule g =
+  let formula, epsilons0, sigmas = make_constraints g in
+  let rec aux epsilons sched =
+    if G.E.Map.is_empty epsilons then
+      Some sched
+    else
+      match mk_schedule1D formula sigmas epsilons with
+      | None -> None
+      | Some (sched1D, epsilons) ->
+        aux epsilons (add_schedule sched1D sched)
+  in
+  let empty_schedule = G.V.Map.map (fun _ -> []) sigmas in
+  aux epsilons0 empty_schedule
+
+let pp_schedule fmt sched =
+  let f fmt (k, v) =
+    Fmt.pf fmt "@[%a -> (%a)@]"
+      Name.pp k.Rewrite.name
+      (Fmt.list ~sep:Fmt.comma Index.pp) v
+  in 
+  Fmt.pf fmt "@[<v>%a@]" (Fmt.iter_bindings ~sep:Fmt.cut G.V.Map.iter f) sched
