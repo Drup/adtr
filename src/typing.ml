@@ -130,12 +130,21 @@ let type_clause tyenv env (pattern, pat_ty) (expr, expr_ty) =
   (* This sorting is only for convenience and test stability *)
   |> List.sort (fun a b -> Stdlib.compare a.Rewrite.name b.name)
 
+
+let (-->) l t = TFun (l, t)
+let init = Name.Map.of_list [
+    "+", [ TInt; TInt ] --> TInt;
+    "*", [ TInt; TInt ] --> TInt;
+    "/", [ TInt; TInt ] --> TInt;
+    "-", [ TInt; TInt ] --> TInt;
+  ]
+
 let type_rewrite
     tyenv {Syntax. f ; parameters ; return_ty ; discriminant ; clauses } =
   let env =
     List.fold_left
       (fun e (n,ty) -> register_name n ty e)
-      Name.Map.empty parameters
+      init parameters
   in
   let discriminant_ty = get_name discriminant env in
   let env = 

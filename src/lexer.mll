@@ -99,6 +99,10 @@ rule token = parse
   | "|"  { BAR }
   | ","  { COMMA }
   | "."  { DOT }
+  | "+" { PLUS }
+  | "-" { MINUS }
+  | "*" { MULT }
+  | "/" { DIV }
   | eof { EOF }
   | (_ as illegal_char)
       { error lexbuf (Peahell.Input.Lex.Illegal_character illegal_char) }

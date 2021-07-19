@@ -37,8 +37,11 @@ let () = Report.register_report_of_exn prepare_error
 %token LACCO RACCO
 %token BAR ARROW
 %token TYPE INT
+%token PLUS MULT MINUS DIV
 %token <string> EXPECT
 
+%left PLUS MINUS
+%left MULT DIV
 
 /* Entry points */
 
@@ -127,7 +130,16 @@ expr:
   | constructor=constr
     LPAREN arguments=separated_list(COMMA,expr) RPAREN
     { EConstructor {constructor; arguments } }
+  | f=var LPAREN arguments=separated_list(COMMA,expr) RPAREN
+    { EApp (f, arguments) }
+  | e1=expr f=infix_fun e2=expr { EApp (f, [e1;e2]) }
   | var=var { EVar var }
+
+%inline infix_fun:
+  | PLUS { "+" }
+  | MINUS { "-" }
+  | MULT { "*" }
+  | DIV { "/" }
 
 tyconstr: LIDENT {$1};
 constr: UIDENT {$1};

@@ -1,5 +1,6 @@
 open Syntax
 
+
 (** Definition and utilities for rewrite constructs *)
 
 type 'a expr =
@@ -67,14 +68,13 @@ let pp_position pp_mem fmt = function
   | External -> Fmt.pf fmt "x"
   | Absent -> Fmt.pf fmt "ø"
 
-let pp_clause pp_mem =
-  let pp_def fmt { name ; src ; dest ; ty } =
-    Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] →@ @[<h>%a@])@]"
-      name Printer.types ty
-      (pp_expr @@ pp_position pp_mem) src
-      (pp_position pp_mem) dest
-  in
-  Fmt.vbox @@ Fmt.list pp_def
+let pp_move pp_mem fmt { name ; src ; dest ; ty } =
+  Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] →@ @[<h>%a@])@]"
+    name Printer.types ty
+    (pp_expr @@ pp_position pp_mem) src
+    (pp_position pp_mem) dest
+
+let pp_clause pp_mem = Fmt.vbox @@ Fmt.list @@ pp_move pp_mem 
 
 let pp pp_mem fmt
     { f; parameters; return_ty; discriminant; discriminant_ty; clauses } =
@@ -126,6 +126,13 @@ module Layer = struct
   let one (fields, mult) : Path.t = [ fields ; mult]
   let many k (fields, mult) : Path.t = [ fields ; mult ; k]
 end
+
+
+type error =
+  | Not_supported of Field.t movement
+exception Error of error
+let error e = raise @@ Error e
+
 
 let subtree2layer tyenv (r : Field.t t) =
   let transl_movement_scalar mov : Path.t movement list =
@@ -203,11 +210,11 @@ let subtree2layer tyenv (r : Field.t t) =
         let f = map_movement (fun l -> (l, None)) f in
         transl_movement_no_conflict f
       end
-    | _, External ->
+    | Slot External, _ | _, External ->
       let f = map_movement (fun l -> (l, None)) f in
       transl_movement_no_conflict f
     | _, Internal _ ->
-      failwith "Not supported"
+      error @@ Not_supported f
   in
   let make_clause old_clause =
     CCList.flat_map transl_movement old_clause
@@ -307,3 +314,10 @@ end
 
 module WithSubtree = DepGraph(Subtree)
 module WithLayer = DepGraph(Layer)
+
+let prepare_error = function
+  | Error (Not_supported m) -> 
+    Some (Report.errorf "Not supported : %a" (pp_move @@ Field.pp) m)
+  | _ -> None
+let () =
+  Report.register_report_of_exn prepare_error

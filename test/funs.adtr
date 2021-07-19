@@ -1,0 +1,14 @@
+type list = Nil () | Cons (int, list)
+
+incr1 (l : list) : list = rewrite l {
+  | Nil -> Nil
+  | Cons (i,rest) -> Cons (i+i,rest)
+}
+(*EXPECT
+incr1 (l : list) : list = rewrite l {
+  | 
+  | (+₀:int | +(.int@0, .int@0) → .int@0)
+}
+
+*)
+
