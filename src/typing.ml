@@ -64,7 +64,7 @@ let check ty1 ty2 =
 let type_pattern tyenv posmap0 pattern0 pat_ty0 = 
   let rec aux posmap (path : Field.t) pattern pat_ty = match pattern with
     | PVar name ->
-      register_name name (pat_ty, Rewrite.Internal path) posmap
+      register_name name (pat_ty, Rewrite.Position (Some name, path)) posmap
     | PConstructor { constructor; arguments } ->
       let argument_tys =
         Types.instantiate_data_constructor tyenv constructor pat_ty
@@ -84,7 +84,7 @@ let rec type_expression tyenv env posmap (path : Field.t) expr0 expr_ty0 =
     let name =
       match expr with EVar n -> n | EApp (n,_) -> Name.fresh n | _ -> assert false
     in
-    let dest = Rewrite.Internal path in
+    let dest = Some path in
     let src = type_hole tyenv env expr expr_ty0 in
     let ty = expr_ty0 in
     {Rewrite. name ; src; dest ; ty } :: posmap
@@ -120,7 +120,7 @@ and type_hole tyenv env expr expr_ty = match expr with
     error @@ Constructor_not_allowed constructor
 
 let type_clause tyenv env (pattern, pat_ty) (expr, expr_ty) =
-  let inputs = Name.Map.map (fun ty -> ty, Rewrite.External) env in
+  let inputs = Name.Map.mapi (fun n ty -> ty, Rewrite.External n) env in
   let srcs = type_pattern tyenv inputs pattern pat_ty in
   let env =
     Name.Map.union (fun _ _ e -> Some e) inputs srcs

@@ -8,9 +8,9 @@ dup (t:t, i:int) : t = rewrite t {
 }
 (*EXPECT
 dup (t : t, i : int) : t = rewrite t {
-  | (i:int | .int@0 ← x)
-    (x:t | .t@2.φ^k₀ ← .t@0.φ^k₀)
-    (x:t | .t@1.φ^k₁ ← .t@0.φ^k₁)
+  | (i:int | .int@0 ← i)
+    (x:t | .t@2.φ^k₀ ← x:.t@0.φ^k₀)
+    (x:t | .t@1.φ^k₁ ← x:.t@0.φ^k₁)
 }
 
 *)

@@ -71,8 +71,8 @@ module G = Rewrite.WithLayer
 let positivity_constraints g =
   let n = Index.var "N" in
   G.fold_vertex (fun ({Rewrite. src ; dest ; name ; _ } as m) (lams, sigma) ->
-      let src_slots = Rewrite.slots_of_expr src in
-      let dest_slots = Rewrite.slots_of_position dest in
+      let src_slots = Rewrite.paths_of_src src in
+      let dest_slots = Rewrite.paths_of_dest dest in
       let l = src_slots @ dest_slots in
       let constrs = Constraint.and_ (List.map (Path.Domain.make n) l) in
       let system = linearform_of_constraint constrs in
@@ -93,7 +93,7 @@ let positivity_constraints g =
 let increasing_constraints sigmas g =
   G.fold_edges_e (fun edge (mus, epsilons, constrs) ->
       let src, q_edge, dest = edge in
-      let system = linearform_of_constraint q_edge in
+      let system = linearform_of_constraint @@ Constraint.and_ q_edge in
       Fmt.epr "@[<v2>Q_(%a,%a):@ %a@]@."
         Name.pp src.name Name.pp dest.name
         (Fmt.list Index.pp) system

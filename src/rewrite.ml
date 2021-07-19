@@ -3,20 +3,18 @@ open Syntax
 
 (** Definition and utilities for rewrite constructs *)
 
-type 'a expr =
-  | Slot of 'a
-  | App of name * 'a expr list
-
-(** [position] describes where a variable is allocated *)
 type 'a position =
-  | Internal of 'a (** The variable is present in the term *)
-  | External (** The variable comes from outside, for instance the arguments *)
-  | Absent (** The variable is not used *)
+  | Position of (Name.t option * 'a) (** A position in the term under scrutiny *)
+  | External of Name.t (** An external term, like an argument *)
+
+type 'a expr =
+  | Slot of 'a position
+  | App of name * 'a expr list
 
 type 'a movement = {
   name : Name.t ;
-  src : 'a position expr ;
-  dest : 'a position ;
+  src : 'a expr ;
+  dest : 'a option ;
   ty : Syntax.type_expr ;
 }
 
@@ -33,46 +31,51 @@ type 'a t = {
 
 (** Generic utilities *)
 
-let slots_of_position = function
-  | Internal x -> [x]
-  | External | Absent -> []
-let rec slots_of_expr = function
-  | Slot x -> slots_of_position x
-  | App (_,l) -> CCList.flat_map slots_of_expr l
+let position x = Position (None, x)
 
-let rec map_expr f = function
-  | Slot x -> Slot (f x)
-  | App (n, l) -> App (n, List.map (map_expr f) l)
+let paths_of_dest = function
+  | Some x -> [x]
+  | None -> []
+let rec paths_of_src = function
+  | Slot (Position (_,x)) -> [x]
+  | Slot (External _) -> []
+  | App (_,l) -> CCList.flat_map paths_of_src l
 
-let map_position f = function
-  | Internal x -> Internal (f x)
-  | Absent -> Absent
-  | External -> External
+let rec map_src f = function
+  | Slot (Position (n,x)) -> Slot (Position (n,f x))
+  | Slot (External _ as x) -> Slot x
+  | App (n, l) -> App (n, List.map (map_src f) l)
+
+let map_dest = CCOpt.map
 
 let map_movement f { name ; src ; dest ; ty } =
-  let src = map_expr (map_position f) src in
-  let dest = map_position f dest in
+  let src = map_src f src in
+  let dest = map_dest f dest in
   { name ; src ; dest ; ty }
 
 (** Printers *)
 
-let rec pp_expr pp_mem fmt = function
-  | Slot x -> pp_mem fmt x
+let pp_src1 pp_mem fmt = function
+  | Position (None,p) -> pp_mem fmt p
+  | Position (Some n,p) -> Fmt.pf fmt "%a:%a" Name.pp n pp_mem p
+  | External n -> Fmt.pf fmt "%a" Name.pp n
+
+let rec pp_src pp_mem fmt = function
+  | Slot x -> pp_src1 pp_mem fmt x
   | App (n, l) ->
     Fmt.pf fmt "%a(%a)"
       Name.pp n
-      (Fmt.list ~sep:Fmt.comma @@ pp_expr pp_mem) l
+      (Fmt.list ~sep:Fmt.comma @@ pp_src pp_mem) l
 
-let pp_position pp_mem fmt = function
-  | Internal c -> pp_mem fmt c
-  | External -> Fmt.pf fmt "x"
-  | Absent -> Fmt.pf fmt "ø"
+let pp_dest pp_mem fmt = function
+  | Some c -> pp_mem fmt c
+  | None -> Fmt.pf fmt "ø"
 
 let pp_move pp_mem fmt { name ; src ; dest ; ty } =
   Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] ←@ @[<h>%a@])@]"
     name Printer.types ty
-    (pp_position pp_mem) dest
-    (pp_expr @@ pp_position pp_mem) src
+    (pp_dest pp_mem) dest
+    (pp_src pp_mem) src
 
 let pp_clause pp_mem = Fmt.vbox @@ Fmt.list @@ pp_move pp_mem 
 
@@ -108,8 +111,8 @@ module Layer = struct
   let pp = Path.pp
   let pp_extra fmt x =
     let v = Index.var "N" in
-    let src_slots = slots_of_expr x.src in
-    let dest_slots = slots_of_position x.dest in
+    let src_slots = paths_of_src x.src in
+    let dest_slots = paths_of_dest x.dest in
     let l = src_slots @ dest_slots in
     let f = Constraint.and_ (List.map (Path.Domain.make v) l) in
     Fmt.pf fmt "@.@[<hov>%a@]" Constraint.pp f
@@ -177,8 +180,8 @@ let subtree2layer tyenv (r : Field.t t) =
           Layer.one (prefix, Some {Path. index ; mov ; suffix })
         in
         let name = Fmt.strf "%s%a" name Field.pp_top suffix in
-        let src =  Slot (Internal (f src)) in
-        let dest = Internal (f dest) in
+        let src =  Slot (position (f src)) in
+        let dest = Some (f dest) in
         { name ; src ; dest ; ty }
       in
       List.map mk_move cell_suffixes
@@ -187,8 +190,8 @@ let subtree2layer tyenv (r : Field.t t) =
       let mk_move (suffix, ty) =
         let f pref = (pref, Some {Path. index ; mov ; suffix }) in
         let name = Fmt.strf "%s%a" name Field.pp_top suffix in
-        let src =  Slot (Internal (f src)) in
-        let dest = Internal (f dest) in
+        let src =  Slot (position (f src)) in
+        let dest = Some (f dest) in
         transl_movement_no_conflict { name ; src ; dest ; ty }
       in
       CCList.flat_map mk_move cursor_suffixes
@@ -197,23 +200,28 @@ let subtree2layer tyenv (r : Field.t t) =
   in
   let transl_movement ({ name ; ty ; src ; dest } as f) =
     match src, dest with
-    | Slot (Internal l), Internal l' when l = l' -> []
-    | _, Absent -> []
+    | Slot (Position (_, l)), Some l' when l = l' -> []
+    | _, None -> []
     | _, _ when Types.is_scalar ty ->
       let f = map_movement (fun l -> (l, None)) f in
       transl_movement_scalar f
-    | Slot (Internal src), Internal dest -> 
-      begin match Field.conflict src dest with
-      | Some (_, mov) ->
-        transl_movement_conflict name ty src dest mov
-      | None ->
-        let f = map_movement (fun l -> (l, None)) f in
-        transl_movement_no_conflict f
+    | Slot _ as srcs, Some dest ->
+      begin match paths_of_src srcs with
+        | [ src ] -> 
+          begin match Field.conflict src dest with
+            | Some (_, mov) ->
+              transl_movement_conflict name ty src dest mov
+            | None ->
+              let f = map_movement (fun l -> (l, None)) f in
+              transl_movement_no_conflict f
+          end
+        | [] -> 
+          let f = map_movement (fun l -> (l, None)) f in
+          transl_movement_no_conflict f
+        | _ ->
+          error @@ Not_supported f
       end
-    | Slot External, _ | _, External ->
-      let f = map_movement (fun l -> (l, None)) f in
-      transl_movement_no_conflict f
-    | _, Internal _ ->
+    | _ ->
       error @@ Not_supported f
   in
   let make_clause old_clause =
@@ -241,8 +249,8 @@ module DepGraph (Mem : MEM) = struct
     let hash x = Hashtbl.hash x
   end
   module Edge = struct
-    type t = Mem.conflict
-    let default = Mem.default
+    type t = Mem.conflict list
+    let default = []
     let compare = compare
   end
   module G = Graph.Persistent.Digraph.ConcreteLabeled(Vertex)(Edge)
@@ -250,20 +258,22 @@ module DepGraph (Mem : MEM) = struct
   module V = struct include V module Map = CCMap.Make(V) end
   module E = struct include E module Map = CCMap.Make(E) end
 
-  let conflict pos1 pos2 = match pos1, pos2 with
-    | Slot (Internal p1), Internal p2 -> Mem.conflict p1 p2
-    | _ -> None
+  let conflict srcs dest =
+    let l = paths_of_src srcs in 
+    match dest with
+    | Some dest -> List.filter_map (fun src -> Mem.conflict src dest) l
+    | None -> []
   let happens_before def1 def2 =
     conflict def1.src def2.dest
   let add_conflict g def1 def2 =
     let g =
       match happens_before def1 def2 with
-      | Some i -> add_edge_e g (def1, i, def2)
-      | None -> g
+      | [] -> g
+      | i -> add_edge_e g (def1, i, def2)
     in
     match happens_before def2 def1 with
-    | Some i -> add_edge_e g (def2, i, def1)
-    | None -> g
+    | [] -> g
+    | i -> add_edge_e g (def2, i, def1)
   
   let create (moves : _ clause) =
     List.fold_left (fun g def1 ->
@@ -286,13 +296,13 @@ module DepGraph (Mem : MEM) = struct
         let label =
           Fmt.str "%a\n%a\n%a → %a%a"
             Name.pp name Printer.types ty
-            (pp_expr @@ pp_position Mem.pp) src (pp_position Mem.pp) dest
+            (pp_src Mem.pp) src (pp_dest Mem.pp) dest
             Mem.pp_extra x
         in
         [shape; `Label label]
       let default_edge_attributes _g = []
       let edge_attributes (def1,i,def2) =
-        let label = Fmt.str "%a" Mem.pp_conflict i
+        let label = Fmt.str "@[<v>%a@]" (Fmt.list ~sep:Fmt.cut Mem.pp_conflict) i
         in
         [ `Label label;
         ]
