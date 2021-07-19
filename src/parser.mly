@@ -99,6 +99,8 @@ simple_type_expr:
 
 type_expr:
   | ty=simple_type_expr {ty}
+  | argument=simple_type_expr ARROW ret=simple_type_expr
+    { TFun ([argument], ret) }
   | constructor = tyconstr arguments=arguments
     { TConstructor { arguments; constructor } }
 ;
@@ -110,7 +112,7 @@ rewrite:
 
 parameters: l=separated_list(COMMA,parameter) { l }
 parameter:
-  | n=var COLON ty=simple_type_expr { n, ty }
+  | n=var COLON ty=type_expr { n, ty }
 
 clauses: BAR? l = separated_list(BAR,clause) { l }
 clause:

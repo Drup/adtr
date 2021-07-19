@@ -12,3 +12,16 @@ incr1 (l : list) : list = rewrite l {
 
 *)
 
+map1 (f : int -> int, l : list) : list = rewrite l {
+  | Nil -> Nil
+  | Cons (i,rest) -> Cons (f(i),rest)
+}
+(*EXPECT
+
+map1 (f : int -> int, l : list) : list = rewrite l {
+  | 
+  | (f₀:int | f(.int@0) → .int@0)
+}
+
+*)
+
