@@ -8,14 +8,14 @@ add (tree: t, newt: t) : t = rewrite tree {
 }
 (*EXPECT
 add (tree : t, newt : t) : t = rewrite tree {
-  | (newt:t | x → .t@2.φ^k₀)
-  | (newt:t | x → .t@3.φ^k₁)
-  | (newt:t | x → .t@3.t@1.φ^k₂)
-    (t4[]:t | .t@3.t@0^k₃ → .t@3.t@0^(k₃ + 1))
-    (t4.int@0:int | .t@3.t@0^k₃.int@0 → .t@3.t@0^(k₃ + 1).int@0)
-    (t4.t@1:t | .t@3.t@0^k₃.t@1.φ^k₄ → .t@3.t@0^(k₃ + 1).t@1.φ^k₄)
-    (t4.t@2:t | .t@3.t@0^k₃.t@2.φ^k₅ → .t@3.t@0^(k₃ + 1).t@2.φ^k₅)
-    (t4.t@3:t | .t@3.t@0^k₃.t@3.φ^k₆ → .t@3.t@0^(k₃ + 1).t@3.φ^k₆)
+  | (newt:t | .t@2.φ^k₀ ← x)
+  | (newt:t | .t@3.φ^k₁ ← x)
+  | (newt:t | .t@3.t@1.φ^k₂ ← x)
+    (t4[]:t | .t@3.t@0^(k₃ + 1) ← .t@3.t@0^k₃)
+    (t4.int@0:int | .t@3.t@0^(k₃ + 1).int@0 ← .t@3.t@0^k₃.int@0)
+    (t4.t@1:t | .t@3.t@0^(k₃ + 1).t@1.φ^k₄ ← .t@3.t@0^k₃.t@1.φ^k₄)
+    (t4.t@2:t | .t@3.t@0^(k₃ + 1).t@2.φ^k₅ ← .t@3.t@0^k₃.t@2.φ^k₅)
+    (t4.t@3:t | .t@3.t@0^(k₃ + 1).t@3.φ^k₆ ← .t@3.t@0^k₃.t@3.φ^k₆)
 }
 
 *)

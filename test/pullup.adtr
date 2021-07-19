@@ -7,13 +7,13 @@ pull_up (t:tree) : tree = rewrite t {
 (*EXPECT
 pull_up (t : tree) : tree = rewrite t {
   | 
-  | (b:tree | .tree@2.tree@0.φ^k₀ → .tree@0.φ^k₀)
-    (c[]:tree | .tree@2^(k₁ + 2) → .tree@2^(k₁ + 1))
-    (c.int@1:int | .tree@2^(k₁ + 2).int@1 → .tree@2^(k₁ + 1).int@1)
+  | (b:tree | .tree@0.φ^k₀ ← .tree@2.tree@0.φ^k₀)
+    (c[]:tree | .tree@2^(k₁ + 1) ← .tree@2^(k₁ + 2))
+    (c.int@1:int | .tree@2^(k₁ + 1).int@1 ← .tree@2^(k₁ + 2).int@1)
     (c.tree@0:tree |
-     .tree@2^(k₁ + 2).tree@0.φ^k₂ →
-     .tree@2^(k₁ + 1).tree@0.φ^k₂)
-    (j:int | .tree@2.int@1 → .int@1)
+     .tree@2^(k₁ + 1).tree@0.φ^k₂ ←
+     .tree@2^(k₁ + 2).tree@0.φ^k₂)
+    (j:int | .int@1 ← .tree@2.int@1)
 }
 
 *)

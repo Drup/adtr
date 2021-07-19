@@ -69,10 +69,10 @@ let pp_position pp_mem fmt = function
   | Absent -> Fmt.pf fmt "ø"
 
 let pp_move pp_mem fmt { name ; src ; dest ; ty } =
-  Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] →@ @[<h>%a@])@]"
+  Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] ←@ @[<h>%a@])@]"
     name Printer.types ty
-    (pp_expr @@ pp_position pp_mem) src
     (pp_position pp_mem) dest
+    (pp_expr @@ pp_position pp_mem) src
 
 let pp_clause pp_mem = Fmt.vbox @@ Fmt.list @@ pp_move pp_mem 
 
