@@ -25,3 +25,20 @@ map1 (f : int -> int, l : list) : list = rewrite l {
 
 *)
 
+
+mapwrong (f : int -> int, l : list) : list = rewrite l {
+  | Nil -> Nil
+  | Cons (i,rest) -> Cons (f(rest),rest)
+}
+(*EXPECT
+Error: The type int was expected, but we got type list
+*)
+
+mapwrong2 (f : list -> list, l : list) : list = rewrite l {
+  | Nil -> Nil
+  | Cons (i,rest) -> Cons (i,f(rest))
+}
+(*EXPECT
+Error: Not supported : (f₂:list | f(.list@1) → .list@1)
+*)
+
