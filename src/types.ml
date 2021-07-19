@@ -36,7 +36,7 @@ let rec equal ty1 ty2 = match ty1, ty2 with
 
 let is_scalar ty = match ty with
   | TInt -> true
-  | TConstructor _ -> false
+  | TConstructor _ | TFun _ -> false
   | TVar _ -> assert false
 
 module Env = struct
@@ -68,6 +68,10 @@ module Subst = struct
     match ty with
     | TVar n -> var subst n
     | TInt -> TInt
+    | TFun (args, ret) ->
+      let args = List.map (type_expr subst) args in
+      let ret = type_expr subst ret in
+      TFun (args, ret)
     | TConstructor { constructor; arguments } ->
       let arguments = List.map (type_expr subst) arguments in
       TConstructor { constructor; arguments }
@@ -76,10 +80,10 @@ end
 
 let rec get_definition_with_subst tyenv subst ty = 
   match ty with
+  | TInt | TFun _ -> error @@ No_constructor ty
   | TVar name ->
     let ty = Subst.var subst name in
     get_definition_with_subst tyenv subst ty
-  | TInt -> error @@ No_constructor ty
   | TConstructor { constructor = type_name ; arguments } ->
     let { name = _ ; parameters ; definition } = Env.get type_name tyenv in
     let subst =
@@ -100,17 +104,15 @@ let rec get_definition_with_subst tyenv subst ty =
 
 let get_definition tyenv ty = get_definition_with_subst tyenv Subst.empty ty
 
-let rec instantiate_data_constructor_with_subst tyenv subst constructor ty =
+let instantiate_data_constructor tyenv constructor ty =
   match ty with
-  | TVar name ->
-    let ty = Subst.var subst name in
-    instantiate_data_constructor_with_subst tyenv subst constructor ty
-  | TInt -> error @@ Bad_constructor (constructor, ty)
+  | TVar _ -> assert false
+  | TInt | TFun _ -> error @@ Bad_constructor (constructor, ty)
   | TConstructor { constructor = type_name ; arguments } ->
     let { name = _ ; parameters ; definition } = Env.get type_name tyenv in
     let subst =
       let f e name ty = Name.Map.add name ty e in
-      List.fold_left2 f subst parameters arguments
+      List.fold_left2 f Subst.empty parameters arguments
     in
     begin
       match definition with
@@ -120,9 +122,6 @@ let rec instantiate_data_constructor_with_subst tyenv subst constructor ty =
         | Some { constructor = _ ; arguments } ->
           List.map (Subst.type_expr subst) arguments
     end
-
-let instantiate_data_constructor tyenv constructor ty =
-  instantiate_data_constructor_with_subst tyenv Subst.empty constructor ty
 
 let complement tyenv ty0 (fields0 : Field.t) =
   let rec aux prev_ty curr_fields = function

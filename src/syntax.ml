@@ -13,6 +13,7 @@ and type_expr =
   | TInt
   | TVar of name
   | TConstructor of type_expr constr_app
+  | TFun of type_expr list * type_expr
 
 and definition =
   | Sum of data_constructor list
@@ -32,6 +33,7 @@ type pattern =
 type expr = 
   | EConstructor of expr constr_app
   | EVar of name
+  | EApp of name * expr list
 
 type rewrite = {
   f : name ;

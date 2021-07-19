@@ -71,11 +71,10 @@ module G = Rewrite.WithLayer
 let positivity_constraints g =
   let n = Index.var "N" in
   G.fold_vertex (fun ({Rewrite. src ; dest ; name ; _ } as m) (lams, sigma) ->
-      let get_ineqs = function
-        | Rewrite.Absent | External -> Constraint.True
-        | Internal p -> Path.Domain.make n p
-      in
-      let constrs = Constraint.( get_ineqs src &&& get_ineqs dest ) in
+      let src_slots = Rewrite.slots_of_expr src in
+      let dest_slots = Rewrite.slots_of_position dest in
+      let l = src_slots @ dest_slots in
+      let constrs = Constraint.and_ (List.map (Path.Domain.make n) l) in
       let system = linearform_of_constraint constrs in
       Fmt.epr "@[<v2>D_%a:@ %a@]@."
         Name.pp name

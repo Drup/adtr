@@ -4,7 +4,10 @@ type error =
   | Overlapping_name of Name.t
   | Unbound_variable of Name.t
   | Cannot_pattern_match of Syntax.type_expr
+  | Not_a_function of Name.t * Syntax.type_expr
+  | Arity_dont_match of Name.t * Syntax.type_expr * int
   | Types_dont_match of Syntax.type_expr * Syntax.type_expr
+  | Constructor_not_allowed of Name.t
 exception Error of error
 let error e = raise @@ Error e
 
@@ -22,6 +25,18 @@ let prepare_error = function
     Some
       (Report.errorf "The type %a was expected, but we got type %a"
          Printer.types ty2 Printer.types ty1)
+  | Error (Arity_dont_match (name,ty,i)) ->
+    Some
+      (Report.errorf "The function %a has type %a. It is applied to %i arguments."
+         Name.pp name Printer.types ty i)
+  | Error (Not_a_function (n, ty)) ->
+    Some
+      (Report.errorf "The variable %a has type %a. It is not a function. It cannot be applied."
+         Name.pp n Printer.types ty)
+  | Error (Constructor_not_allowed str) ->
+    Some
+      (Report.errorf "This is a the type constructor %a. Type constructors are not allowed in this position"
+         Name.pp str)
   | _ -> None
 
 let () =
@@ -49,7 +64,7 @@ let check ty1 ty2 =
 let type_pattern tyenv posmap0 pattern0 pat_ty0 = 
   let rec aux posmap (path : Field.t) pattern pat_ty = match pattern with
     | PVar name ->
-      register_name name (Rewrite.Internal path, pat_ty) posmap
+      register_name name (pat_ty, Rewrite.Internal path) posmap
     | PConstructor { constructor; arguments } ->
       let argument_tys =
         Types.instantiate_data_constructor tyenv constructor pat_ty
@@ -63,40 +78,55 @@ let type_pattern tyenv posmap0 pattern0 pat_ty0 =
 
 let env_of_posmap posmap = Name.Map.map snd posmap
 
-let type_expression tyenv env posmap0 expr0 expr_ty0 = 
-  let rec aux posmap (path : Field.t) expr expr_ty = match expr with
-    | EVar name ->
-      let ty = get_name name env in
-      check ty expr_ty;
-      add_name name (Rewrite.Internal path) posmap
-    | EConstructor { constructor; arguments } ->
-      let argument_tys =
-        Types.instantiate_data_constructor tyenv constructor expr_ty
-      in
-      CCList.foldi2
-        (fun env pos expr expr_ty ->
-           aux env Field.(path +/ { ty = expr_ty; pos}) expr expr_ty)
-        posmap arguments argument_tys
-  in
-  aux posmap0 Field.empty expr0 expr_ty0
+let rec type_expression tyenv env posmap (path : Field.t) expr0 expr_ty0 =
+  match expr0 with
+  | EApp _ | EVar _ as expr ->
+    let name =
+      match expr with EVar n -> n | EApp (n,_) -> Name.fresh n | _ -> assert false
+    in
+    let dest = Rewrite.Internal path in
+    let src = type_hole tyenv env expr expr_ty0 in
+    let ty = expr_ty0 in
+    {Rewrite. name ; src; dest ; ty } :: posmap
+  | EConstructor { constructor; arguments } ->
+    let argument_tys =
+      Types.instantiate_data_constructor tyenv constructor expr_ty0
+    in
+    CCList.foldi2
+      (fun posmap pos expr expr_ty ->
+         type_expression tyenv env posmap
+           Field.(path +/ { ty = expr_ty; pos}) expr expr_ty)
+      posmap arguments argument_tys
+
+and type_hole tyenv env expr expr_ty = match expr with
+  | EVar name ->
+    let ty, src_pos = get_name name env in
+    check ty expr_ty;
+    Rewrite.Slot src_pos
+  | EApp (name, args) ->
+    let ty, src_pos = get_name name env in
+    begin match ty with
+      | TFun (params, ret) -> 
+        check ret expr_ty;
+        if List.length params <> List.length args then
+          error @@ Arity_dont_match (name, ty, List.length args)
+        else
+          let l = List.map2 (type_hole tyenv env) args params in
+          Rewrite.App (name, l)
+      | _ ->
+        error @@ Not_a_function (name, ty)
+    end
+  | EConstructor { constructor; _ } ->
+    error @@ Constructor_not_allowed constructor
 
 let type_clause tyenv env (pattern, pat_ty) (expr, expr_ty) =
-  let inputs = Name.Map.map (fun ty -> Rewrite.External, ty) env in
+  let inputs = Name.Map.map (fun ty -> ty, Rewrite.External) env in
   let srcs = type_pattern tyenv inputs pattern pat_ty in
   let env =
-    Name.Map.union (fun _ _ e -> Some e) env (env_of_posmap srcs)
+    Name.Map.union (fun _ _ e -> Some e) inputs srcs
   in
-  let dests = type_expression tyenv env Name.Map.empty expr expr_ty in
-  Name.Map.fold 
-    ((fun name (src, ty) rules ->
-        match Name.Map.get name dests with
-        | None ->
-          {Rewrite. name ; src; dest = Absent ; ty } :: rules
-        | Some dests ->
-          List.map (fun dest -> {Rewrite. name ; src; dest; ty }) dests
-          @ rules
-      ))
-    srcs []
+  let dests = type_expression tyenv env [] Field.empty expr expr_ty in
+  dests
   (* This sorting is only for convenience and test stability *)
   |> List.sort (fun a b -> Stdlib.compare a.Rewrite.name b.name)
 

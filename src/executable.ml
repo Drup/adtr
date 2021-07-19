@@ -43,8 +43,8 @@ include Peahell.Make(struct
           Peahell.Report.printf "%a@." (Rewrite.pp Rewrite.Layer.pp) mem_moves;
           mem_moves.clauses |> List.iter (fun clause ->
               let g = Rewrite.WithLayer.create clause in
-              let sched = Scheduling.mk_schedule g in
-              Fmt.epr "@[<2>Schedule: %a@]@." (Fmt.option Scheduling.pp_schedule) sched;
+              (* let sched = Scheduling.mk_schedule g in
+               * Fmt.epr "@[<2>Schedule: %a@]@." (Fmt.option Scheduling.pp_schedule) sched; *)
               if !show_depgraph then
                 Rewrite.WithLayer.show g ;
               ()
