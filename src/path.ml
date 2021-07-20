@@ -233,5 +233,15 @@ module Dependencies = struct
       | Some (`right, m) ->
         overlap_two_mult (m,mult1,wild1) (mult2, wild2)
 
-  let make = overlap
+  let constraint_len p1 p2 =
+    let n = Index.var "N" in
+    Constraint.(
+      (Index.zero ==< length p1)
+      &&& (length p1 ==< n)
+      &&& (Index.zero ==< length p2)
+      &&& (length p2 ==< n)
+    )
+  
+  let make p1 p2 =
+    Constraint.(constraint_len p1 p2 &&& overlap p1 p2)
 end

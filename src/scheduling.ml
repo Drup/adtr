@@ -175,6 +175,7 @@ let solve_with_smt constraints optims =
     let solver = make () in
     add ~solver formula;
     let _ = maximize ~solver optims in
+    Fmt.epr "@[<v>Solver:@ %s@]@." (Z3.Optimize.to_string solver) ;
     check ~solver []
   in
   begin match res with
@@ -218,14 +219,16 @@ let add_schedule sched1D sched =
 
 let mk_schedule g =
   let formula, epsilons0, sigmas = make_constraints g in
+  Rewrite.WithLayer.show g ;
   let rec aux epsilons sched =
     if G.E.Map.is_empty epsilons then
       Some sched
     else
       match mk_schedule1D formula sigmas epsilons with
       | None -> None
-      | Some (sched1D, epsilons) ->
-        aux epsilons (add_schedule sched1D sched)
+      | Some (sched1D, epsilons') ->
+        if G.E.Map.equal Name.equal epsilons epsilons' then failwith "PLOUF";
+        aux epsilons' (add_schedule sched1D sched)
   in
   let empty_schedule = G.V.Map.map (fun _ -> []) sigmas in
   aux epsilons0 empty_schedule

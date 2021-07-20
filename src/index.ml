@@ -10,7 +10,7 @@ type t = int index
 
 let refresh_name p =
   let monomes =
-    List.map (fun (var,f) -> (var ^"'", f)) p.monomes
+    List.map (fun (var,f) -> (Name.refresh var, f)) p.monomes
   in 
   { p with monomes }
 

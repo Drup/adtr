@@ -1,12 +1,21 @@
 type foo = A (foo)
 
-f (x : foo) : foo = rewrite x {
+down (x : foo) : foo = rewrite x {
   | A (t) -> t
 }
 (*EXPECT
-f (x : foo) : foo = rewrite x {
+down (x : foo) : foo = rewrite x {
   | (t[]:foo | .foo@0^k₀ ← .foo@0^(k₀ + 1))
 }
 
 *)
 
+up (x : foo) : foo = rewrite x {
+  | t -> A (t)
+}
+(*EXPECT
+down (x : foo) : foo = rewrite x {
+  | (t[]:foo | .foo@0^k₀ ← .foo@0^(k₀ + 1))
+}
+
+*)
