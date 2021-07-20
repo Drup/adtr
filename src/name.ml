@@ -5,6 +5,8 @@ let pp = Fmt.string
 module Map = CCMap.Make(String)
 module Set = CCSet.Make(String)
 
+let refresh n = n ^ "'"
+
 let indice_array = [|"₀";"₁";"₂";"₃";"₄";"₅";"₆";"₇";"₈";"₉"|]
 let rec digits fmt i =
   if i < 0 then
