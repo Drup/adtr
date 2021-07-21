@@ -168,6 +168,7 @@ let solve_with_smt constraints optims =
   let vars = Encode2SMT.H.create 17 in
   let formula = Encode2SMT.constraint2smt vars constraints in
   let optims = Encode2SMT.index2smt vars optims in
+  let optim_sum = Encode2SMT.ZZ.Symbol.term Int optims in
   Fmt.epr "@[<v2>Formula:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify formula) ;
   Fmt.epr "@[<v2>Optim:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify optims) ;
   let res =
@@ -181,12 +182,15 @@ let solve_with_smt constraints optims =
   begin match res with
     | Sat (lazy model) ->
       Fmt.epr "@[<v2>Model:@ %s@." (Z3.Model.to_string model);
-      let f v =
-        Z.to_int @@
-        Encode2SMT.ZZ.Model.get_value ~model @@
-        Encode2SMT.H.find vars v
-      in
-      Some f
+      if Z.equal Z.zero @@ Encode2SMT.ZZ.Model.get_value ~model optim_sum then
+        None
+      else
+        let f v =
+          Z.to_int @@
+          Encode2SMT.ZZ.Model.get_value ~model @@
+          Encode2SMT.H.find vars v
+        in
+        Some f
     | Unkown _ ->
       None
     | Unsat _ ->
@@ -219,7 +223,6 @@ let add_schedule sched1D sched =
 
 let mk_schedule g =
   let formula, epsilons0, sigmas = make_constraints g in
-  Rewrite.WithLayer.show g ;
   let rec aux epsilons sched =
     if G.E.Map.is_empty epsilons then
       Some sched

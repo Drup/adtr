@@ -11,6 +11,9 @@ mirror (t : tree) : tree = rewrite t {
     (b:tree | .tree@0.φ^k₁ ← b:.tree@2.φ^k₁)
 }
 
+Schedule: 
+Schedule: None
+
 *)
 
 mirror2 (t:tree) : tree = rewrite t {
@@ -18,7 +21,6 @@ mirror2 (t:tree) : tree = rewrite t {
   | Node (a,i,Node(b1,j,b2)) -> Node (Node(b2,j,b1),i,a)
 }
 (*EXPECT
-
 mirror2 (t : tree) : tree = rewrite t {
   | 
   | (a:tree | .tree@2.φ^k₂ ← a:.tree@0.φ^k₂)
@@ -26,6 +28,9 @@ mirror2 (t : tree) : tree = rewrite t {
     (b2:tree | .tree@0.tree@0.φ^k₄ ← b2:.tree@2.tree@2.φ^k₄)
     (j:int | .tree@0.int@1 ← j:.tree@2.int@1)
 }
+
+Schedule: 
+Schedule: None
 
 *)
 
@@ -35,7 +40,6 @@ mirror3 (t:tree) : tree = rewrite t {
     Node (Node(b2,ib,b1),i,Node(a2,ia,a1))
 }
 (*EXPECT
-
 mirror3 (t : tree) : tree = rewrite t {
   | 
   | (a1:tree | .tree@2.tree@2.φ^k₅ ← a1:.tree@0.tree@0.φ^k₅)
@@ -46,6 +50,9 @@ mirror3 (t : tree) : tree = rewrite t {
     (ib:int | .tree@0.int@1 ← ib:.tree@2.int@1)
 }
 
+Schedule: 
+Schedule: None
+
 *)
 
 type tree3 = LeafX (int) | NodeX (tree,tree,tree)
@@ -55,7 +62,6 @@ mirror (t:tree3) : tree3 = rewrite t {
   | NodeX (a,b,c) -> NodeX (c,a,b)
 }
 (*EXPECT
-
 mirror (t : tree3) : tree3 = rewrite t {
   | 
   | (a:tree | .tree@1.φ^k₉ ← a:.tree@0.φ^k₉)
@@ -63,5 +69,7 @@ mirror (t : tree3) : tree3 = rewrite t {
     (c:tree | .tree@0.φ^k₁₁ ← c:.tree@2.φ^k₁₁)
 }
 
-*)
+Schedule: 
+Schedule: None
 
+*)

@@ -8,14 +8,32 @@ down (x : foo) : foo = rewrite x {
   | (t[]:foo | .foo@0^k₀ ← .foo@0^(k₀ + 1))
 }
 
+Schedule: t[] -> (k₀ + 0*N)
+
 *)
 
 up (x : foo) : foo = rewrite x {
   | t -> A (t)
 }
 (*EXPECT
-down (x : foo) : foo = rewrite x {
-  | (t[]:foo | .foo@0^k₀ ← .foo@0^(k₀ + 1))
+up (x : foo) : foo = rewrite x {
+  | (t[]:foo | .foo@0^(k₁ + 1) ← .foo@0^k₁)
 }
+
+Schedule: t[] -> (-1*k₁ + N + -1)
+
+*)
+
+type foo2 = X (int, foo2) | Y (foo2)
+
+side (x : foo2) : foo2 = rewrite x {
+  | X (i,t) -> Y (t)
+}
+(*EXPECT
+side (x : foo2) : foo2 = rewrite x {
+  | (t:foo2 | .foo2@0.φ^k₂ ← t:.foo2@1.φ^k₂)
+}
+
+Schedule: t -> ()
 
 *)

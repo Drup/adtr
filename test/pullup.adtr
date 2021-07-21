@@ -1,20 +1,17 @@
-type tree = Empty () | Node (tree,int,tree)
+type tree = Empty () | Node (tree,tree)
 
 pull_up (t:tree) : tree = rewrite t {
- | Empty -> Empty
- | Node(a,i,Node(b,j,c)) -> Node(b,j,c)
+ | Node(a,u) -> u
 }
 (*EXPECT
 pull_up (t : tree) : tree = rewrite t {
-  | 
-  | (b:tree | .tree@0.φ^k₀ ← b:.tree@2.tree@0.φ^k₀)
-    (c[]:tree | .tree@2^(k₁ + 1) ← .tree@2^(k₁ + 2))
-    (c.int@1:int | .tree@2^(k₁ + 1).int@1 ← .tree@2^(k₁ + 2).int@1)
-    (c.tree@0:tree |
-     .tree@2^(k₁ + 1).tree@0.φ^k₂ ←
-     .tree@2^(k₁ + 2).tree@0.φ^k₂)
-    (j:int | .int@1 ← j:.tree@2.int@1)
+  | (u[]:tree | .tree@1^k₀ ← .tree@1^(k₀ + 1))
+    (u.tree@0:tree |
+     .tree@1^k₀.tree@0.φ^k₁ ←
+     .tree@1^(k₀ + 1).tree@0.φ^k₁)
 }
 
-*)
+Schedule: u.tree@0 -> (0*k₁ + k₀ + 0*N)
+          u[] -> (k₀ + 0*N)
 
+*)

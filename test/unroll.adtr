@@ -15,13 +15,17 @@ erase1 (x : t) : t = rewrite x {
      (.t@0.t@0)^(k₀ + 1).t@0.t@1.φ^k₂)
 }
 
+Schedule: x.t@0 -> (k₀ + 0*N)
+          x.t@0.t@1 -> (0*k₂ + k₀ + N + -2)
+          x.t@1 -> (0*k₁ + k₀ + 0*N)
+          x[] -> (2*k₀ + 0*N)
+
 *)
 
 erase2 (x:t) : t = rewrite x {
   | Node(Node (Node(x1,x2), a),b) -> Node(x1,x2)
 }
 (*EXPECT
-
 erase2 (x : t) : t = rewrite x {
   | (x1[]:t | .t@0(.t@0.t@0)^k₃ ← .t@0(.t@0.t@0)^(k₃ + 1))
     (x1.t@0:t | .t@0(.t@0.t@0)^k₃.t@0 ← .t@0(.t@0.t@0)^(k₃ + 1).t@0)
@@ -34,13 +38,18 @@ erase2 (x : t) : t = rewrite x {
     (x2:t | .t@1.φ^k₆ ← x2:.t@0.t@0.t@1.φ^k₆)
 }
 
+Schedule: x1.t@0 -> (k₃ + 0*N)
+          x1.t@0.t@1 -> (0*k₅ + k₃ + 0*N + 1)
+          x1.t@1 -> (0*k₄ + k₃ + 0*N)
+          x1[] -> (k₃ + 0*N)
+          x2 -> (0*k₆ + 0*N)
+
 *)
 
 erase3 (x:t) : t = rewrite x {
   | Node(Node (Node(Node(x1,x2),x3), a),b) -> Node(Node(x1,x2),x3)
 }
 (*EXPECT
-
 erase3 (x : t) : t = rewrite x {
   | (x1[]:t | (.t@0.t@0)^(k₇ + 1) ← (.t@0.t@0)^(k₇ + 2))
     (x1.t@0:t | (.t@0.t@0)^(k₇ + 1).t@0 ← (.t@0.t@0)^(k₇ + 2).t@0)
@@ -54,5 +63,11 @@ erase3 (x : t) : t = rewrite x {
     (x3:t | .t@1.φ^k₁₁ ← x3:.t@0.t@0.t@1.φ^k₁₁)
 }
 
-*)
+Schedule: x1.t@0 -> (k₇ + N)
+          x1.t@0.t@1 -> (0*k₉ + k₇ + 0*N + 1)
+          x1.t@1 -> (0*k₈ + k₇ + 0*N + 1)
+          x1[] -> (k₇ + 0*N)
+          x2 -> (0*k₁₀ + 0*N)
+          x3 -> (0*k₁₁ + 0*N)
 
+*)

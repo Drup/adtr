@@ -13,6 +13,10 @@ dup (t : t, i : int) : t = rewrite t {
     (x:t | .t@1.φ^k₁ ← x:.t@0.φ^k₁)
 }
 
+Schedule: i -> ()
+          x -> ()
+          x -> ()
+
 *)
 
 
@@ -22,4 +26,3 @@ wrongdup (t:t) : t = rewrite t {
 (*EXPECT
 Error: This variable `x` is defined twice in this clause. This is not allowed.
 *)
-

@@ -10,6 +10,9 @@ incr1 (l : list) : list = rewrite l {
   | (+₀:int | .int@0 ← +(i:.int@0, i:.int@0))
 }
 
+Schedule: 
+Schedule: None
+
 *)
 
 map1 (f : int -> int, l : list) : list = rewrite l {
@@ -17,11 +20,13 @@ map1 (f : int -> int, l : list) : list = rewrite l {
   | Cons (i,rest) -> Cons (f(i),rest)
 }
 (*EXPECT
-
 map1 (f : int -> int, l : list) : list = rewrite l {
   | 
   | (f₀:int | .int@0 ← f(i:.int@0))
 }
+
+Schedule: 
+Schedule: None
 
 *)
 
@@ -41,4 +46,3 @@ mapwrong2 (f : list -> list, l : list) : list = rewrite l {
 (*EXPECT
 Error: Not supported : (f₂:list | .list@1 ← f(rest:.list@1))
 *)
-

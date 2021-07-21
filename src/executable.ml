@@ -46,7 +46,8 @@ include Peahell.Make(struct
               if !show_depgraph then
                 Rewrite.WithLayer.show g ;
               let sched = Scheduling.mk_schedule g in
-              Fmt.epr "@[<2>Schedule: %a@]@." (Fmt.option Scheduling.pp_schedule) sched;
+              Fmt.pr "@[<2>Schedule: %a@]@."
+                (Fmt.option ~none:(Fmt.unit "None") Scheduling.pp_schedule) sched;
             );
           tyenv        
       in
