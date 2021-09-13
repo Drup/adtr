@@ -23,7 +23,7 @@ let rec constraint2smt h : _ Constraint.t -> _ = function
   | True -> T.true_
   | False -> T.false_
 
-let sort = (Seq (Bitvector 8))
+let sort = String
 let decl_word base = Symbol.declare sort (Name.fresh base)
 
 let concat_re = function
@@ -31,10 +31,7 @@ let concat_re = function
   | [x] -> x
   | l -> Z3Regex.concat l
 
-let as_re = function
-  | [] -> Z3Regex.from_seq (Z3Seq.empty sort)
-  | [x] -> Z3Regex.from_seq x
-  | l -> Z3Regex.from_seq @@ Z3Seq.concat l
+let as_re = Z3Regex.from_seq
 
 let count_type =
   let h = Hashtbl.create 17 in
@@ -53,9 +50,10 @@ let field2smt (l : Field.t) =
   let aux {Field. ty; pos } =
     let i_ty = count_type ty in
     let i = Int.shift_left i_ty 4 lor pos in
-    Z3Seq.(singleton @@ T.bitv 8 @@ Z.of_int i)
+    let c = Char.code ' ' + i in (* Make a printable char, helps Z3 ... *)
+    Char.unsafe_chr c
   in
-  let s = List.map aux l in
+  let s = Z3Seq.of_string @@ CCString.of_list @@ List.map aux l in
   let len = List.length l in
   s, len
 
@@ -67,7 +65,7 @@ let path2smt s0 p =
       let s, len = field2smt l in
       let rest_re, rest_s, rest_len, formula = mult rest in
       as_re s :: rest_re,
-      s @ rest_s,
+      s :: rest_s,
       Index.(const len + rest_len),
       formula
   and mult : Path.mult -> _ = function
@@ -83,7 +81,7 @@ let path2smt s0 p =
       let i = index2smt vars new_monome in
       let f = T.(Z3Seq.length s = i) in
       new_re :: as_re suffix_s :: rest_re,
-      s :: suffix_s @ rest_s, 
+      s :: suffix_s :: rest_s,
       Index.(new_monome + Index.const suffix_len + rest_len),
       f :: formula
   and layers : Path.layers -> _ = function

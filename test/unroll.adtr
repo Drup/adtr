@@ -16,9 +16,9 @@ erase1 (x : t) : t = rewrite x {
 }
 
 Schedule: x.t@0 -> (k₀ + 0*N)
-          x.t@0.t@1 -> (0*k₂ + k₀ + N + -2)
+          x.t@0.t@1 -> (0*k₂ + k₀ + 0*N)
           x.t@1 -> (0*k₁ + k₀ + 0*N)
-          x[] -> (2*k₀ + 0*N)
+          x[] -> (k₀ + 0*N)
 
 *)
 
