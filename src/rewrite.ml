@@ -49,7 +49,7 @@ let rec map_src f = function
   | Constant _ as c -> c
   | App (n, l) -> App (n, List.map (map_src f) l)
 
-let map_dest = CCOpt.map
+let map_dest = CCOption.map
 
 let map_movement f { name ; src ; dest ; ty } =
   let src = map_src f src in
@@ -90,11 +90,11 @@ let pp pp_mem fmt
     { f; parameters; return_ty; discriminant; discriminant_ty; clauses } =
   Fmt.pf fmt "@[<v>@[<v2>@[%a@ (%a)@ : %a@ = rewrite %a @]{@ %a@]@ }@]"
     Name.pp f
-    (Fmt.list ~sep:(Fmt.unit ", ") @@
-     Fmt.pair ~sep:(Fmt.unit " : ") Name.pp Printer.types) parameters
+    (Fmt.list ~sep:(Fmt.any ", ") @@
+     Fmt.pair ~sep:(Fmt.any " : ") Name.pp Printer.types) parameters
     Printer.types return_ty
     Name.pp discriminant
-    (Fmt.vbox @@ Fmt.list @@ Fmt.prefix (Fmt.unit "| ") @@ pp_clause pp_mem)
+    Fmt.(vbox @@ list (any "| " ++ pp_clause pp_mem))
     clauses
 
 (** Subtree view *)
@@ -106,7 +106,7 @@ module Subtree = struct
   let pp_conflict = Field.pp
   let default = Field.empty
   let conflict p1 p2 =
-    Field.conflict p1 p2 |> CCOpt.map snd
+    Field.conflict p1 p2 |> CCOption.map snd
   let pp_extra = Fmt.nop
 
 end
@@ -169,7 +169,7 @@ let subtree2layer tyenv (r : Field.t t) =
     (** TODO We should try harder to assert that all those path suffixes are 
         non-conflicting *)
     assert (
-      let f ((l1,_),(l2,_)) = CCOpt.is_none @@ Field.conflict l1 l2 in
+      let f ((l1,_),(l2,_)) = CCOption.is_none @@ Field.conflict l1 l2 in
       CCList.(for_all f @@ diagonal cursor_suffixes)
     );
     assert (
@@ -186,7 +186,7 @@ let subtree2layer tyenv (r : Field.t t) =
         let f prefix : Path.t =
           Layer.one (prefix, Some {Path. index ; mov ; suffix })
         in
-        let name = Fmt.strf "%s%a" name Field.pp_top suffix in
+        let name = Fmt.str "%s%a" name Field.pp_top suffix in
         let src =  Slot (position (f src)) in
         let dest = Some (f dest) in
         { name ; src ; dest ; ty }
@@ -196,7 +196,7 @@ let subtree2layer tyenv (r : Field.t t) =
     let cursor_moves = 
       let mk_move (suffix, ty) =
         let f pref = (pref, Some {Path. index ; mov ; suffix }) in
-        let name = Fmt.strf "%s%a" name Field.pp_top suffix in
+        let name = Fmt.str "%s%a" name Field.pp_top suffix in
         let src =  Slot (position (f src)) in
         let dest = Some (f dest) in
         transl_movement_no_conflict { name ; src ; dest ; ty }
@@ -295,7 +295,7 @@ module DepGraph (Mem : MEM) = struct
       let graph_attributes _g = [ `Rankdir `LeftToRight ]
       let default_vertex_attributes _g = []
       let vertex_name def =
-        Fmt.strf "\"%s:%a\"" def.name Printer.types def.ty
+        Fmt.str "\"%s:%a\"" def.name Printer.types def.ty
       let vertex_attributes ({name;src;dest;ty} as x) =
         let shape =
           if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box

@@ -23,4 +23,4 @@ let fresh =
   let r = Hashtbl.create 17 in
   fun s ->
     let i = CCHashtbl.get_or r s ~default:0 in
-    CCHashtbl.incr r s; Fmt.strf "%s%a" s digits i
+    CCHashtbl.incr r s; Fmt.str "%s%a" s digits i

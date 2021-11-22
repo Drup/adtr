@@ -29,7 +29,7 @@ module LF = struct
     match constant, monomes with
     | i, [] -> Index.pp_parens  fmt i
     | i, l ->
-      Fmt.pf fmt "%a" Fmt.(hovbox @@ list ~sep:(unit " +@ ") pp_monome) monomes;
+      Fmt.pf fmt "%a" Fmt.(hovbox @@ list ~sep:(any " +@ ") pp_monome) monomes;
       if constant = Index.zero then ()
       else Fmt.pf fmt " + %a" Index.pp_parens constant
 end

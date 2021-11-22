@@ -47,7 +47,7 @@ include Peahell.Make(struct
                 Rewrite.WithLayer.show g ;
               let sched = Scheduling.mk_schedule g in
               Fmt.pr "@[<2>Schedule: %a@]@."
-                (Fmt.option ~none:(Fmt.unit "None") Scheduling.pp_schedule) sched;
+                (Fmt.option ~none:(Fmt.any "None") Scheduling.pp_schedule) sched;
             );
           tyenv        
       in

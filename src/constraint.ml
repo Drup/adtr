@@ -56,8 +56,8 @@ let rec pp fmt = function
   | True -> Fmt.pf fmt "true"
   | False -> Fmt.pf fmt "false"
   | Constr ineq -> pp_ineq fmt ineq
-  | And l -> Fmt.list ~sep:(Fmt.unit " ∧@ ") pp_paren fmt l
-  | Or l -> Fmt.list ~sep:(Fmt.unit " ∨@ ") pp_paren fmt l
+  | And l -> Fmt.list ~sep:(Fmt.any " ∧@ ") pp_paren fmt l
+  | Or l -> Fmt.list ~sep:(Fmt.any " ∨@ ") pp_paren fmt l
 and pp_paren fmt = function
   | True | False as c -> pp fmt c
   | c -> Fmt.parens pp fmt c

@@ -79,7 +79,7 @@ let pp fmt { constant ; monomes } =
   match constant, monomes with
   | i, [] -> Fmt.int fmt i
   | i, l ->
-    Fmt.pf fmt "%a" Fmt.(hbox @@ list ~sep:(unit " +@ ") pp_monome) monomes;
+    Fmt.pf fmt "%a" Fmt.(hbox @@ list ~sep:(any " +@ ") pp_monome) monomes;
     if constant = 0 then ()
     else Fmt.pf fmt " + %i" constant
 
