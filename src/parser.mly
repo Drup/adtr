@@ -33,10 +33,11 @@ let () = Report.register_report_of_exn prepare_error
 %token COMMA COLON DOT EQUAL
 %token <string> LIDENT
 %token <string> UIDENT
+%token <int> INT
 %token LPAREN RPAREN
 %token LACCO RACCO
 %token BAR ARROW
-%token TYPE INT
+%token TYPE TINT
 %token PLUS MULT MINUS DIV
 %token <string> EXPECT
 
@@ -92,7 +93,7 @@ arguments:
 
 (* Type expressions *)
 simple_type_expr:
-  | INT { TInt }
+  | TINT { TInt }
   | constructor = tyconstr { TConstructor { constructor; arguments = [] } }
   | LPAREN ty=type_expr RPAREN {ty}
 ;
@@ -136,6 +137,10 @@ expr:
     { EApp (f, arguments) }
   | e1=expr f=infix_fun e2=expr { EApp (f, [e1;e2]) }
   | var=var { EVar var }
+  | c=constant { EConstant c }
+
+%inline constant:
+  | i = INT { Int i }
 
 %inline infix_fun:
   | PLUS { "+" }

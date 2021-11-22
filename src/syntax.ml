@@ -26,6 +26,9 @@ and type_declaration = {
 
 (** Rewrite rules *)
 
+type constant =
+  | Int of int
+
 type pattern =
   | PConstructor of pattern constr_app
   | PVar of name
@@ -34,6 +37,7 @@ type expr =
   | EConstructor of expr constr_app
   | EVar of name
   | EApp of name * expr list
+  | EConstant of constant
 
 type rewrite = {
   f : name ;

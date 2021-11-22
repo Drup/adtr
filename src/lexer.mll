@@ -57,7 +57,7 @@ let () =
 let keyword_table =
   CCHashtbl.of_list [
     "rewrite", REWRITE;
-    "int", INT;
+    "int", TINT;
     "type", TYPE;
 ]
 
@@ -83,6 +83,7 @@ rule token = parse
   | uppercase identchar* as name
       { try Hashtbl.find keyword_table name
         with Not_found -> UIDENT name }
+  | digit+ as number { INT (int_of_string number) }
   | "(*EXPECT"
       { let s = wrap_comment_lexer comment lexbuf in
         EXPECT s }

@@ -10,6 +10,7 @@ type 'a position =
 type 'a expr =
   | Slot of 'a position
   | App of name * 'a expr list
+  | Constant of Syntax.constant
 
 type 'a movement = {
   name : Name.t ;
@@ -39,11 +40,13 @@ let paths_of_dest = function
 let rec paths_of_src = function
   | Slot (Position (_,x)) -> [x]
   | Slot (External _) -> []
+  | Constant _ -> []
   | App (_,l) -> CCList.flat_map paths_of_src l
 
 let rec map_src f = function
   | Slot (Position (n,x)) -> Slot (Position (n,f x))
   | Slot (External _ as x) -> Slot x
+  | Constant _ as c -> c
   | App (n, l) -> App (n, List.map (map_src f) l)
 
 let map_dest = CCOpt.map
@@ -60,7 +63,11 @@ let pp_src1 pp_mem fmt = function
   | Position (Some n,p) -> Fmt.pf fmt "%a:%a" Name.pp n pp_mem p
   | External n -> Fmt.pf fmt "%a" Name.pp n
 
+let pp_constant fmt = function
+  | Int i -> Fmt.int fmt i
+
 let rec pp_src pp_mem fmt = function
+  | Constant c -> pp_constant fmt c
   | Slot x -> pp_src1 pp_mem fmt x
   | App (n, l) ->
     Fmt.pf fmt "%a(%a)"

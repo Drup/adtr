@@ -78,11 +78,18 @@ let type_pattern tyenv posmap0 pattern0 pat_ty0 =
 
 let env_of_posmap posmap = Name.Map.map snd posmap
 
+let type_constant (c : Syntax.constant) = match c with
+  | Int _ -> TInt
+
 let rec type_expression tyenv env posmap (path : Field.t) expr0 expr_ty0 =
   match expr0 with
-  | EApp _ | EVar _ as expr ->
+  | EApp _ | EVar _ | EConstant _ as expr ->
     let name =
-      match expr with EVar n -> n | EApp (n,_) -> Name.fresh n | _ -> assert false
+      match expr with
+        | EVar n -> n
+        | EApp (n,_) -> Name.fresh n
+        | EConstant _ -> Name.fresh "const"
+        | EConstructor _ -> assert false
     in
     let dest = Some path in
     let src = type_hole tyenv env expr expr_ty0 in
@@ -99,6 +106,9 @@ let rec type_expression tyenv env posmap (path : Field.t) expr0 expr_ty0 =
       posmap arguments argument_tys
 
 and type_hole tyenv env expr expr_ty = match expr with
+  | EConstant c ->
+    check (type_constant c) expr_ty;
+    Rewrite.Constant c
   | EVar name ->
     let ty, src_pos = get_name name env in
     check ty expr_ty;

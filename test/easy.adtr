@@ -37,3 +37,17 @@ side (x : foo2) : foo2 = rewrite x {
 Schedule: t -> ()
 
 *)
+
+lift (x : foo2) : foo2 = rewrite x {
+  | Y (t) -> X (0,t)
+}
+(*EXPECT
+lift (x : foo2) : foo2 = rewrite x {
+  | (const₀:int | .int@0 ← 0)
+    (t:foo2 | .foo2@1.φ^k₃ ← t:.foo2@0.φ^k₃)
+}
+
+Schedule: const₀ -> ()
+          t -> ()
+
+*)
