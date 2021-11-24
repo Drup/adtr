@@ -44,7 +44,22 @@ let map2 f e1 e2 =
 let eval f { monomes; constant } =
   List.fold_left (fun r (n,k) -> f n * k + r) constant monomes
 
-let plus e1 e2 = map2 (+) e1 e2
+let present v { monomes; constant = _ } =
+  CCList.Assoc.mem ~eq:Name.equal v monomes
+
+let subst v n { monomes; constant } =
+  match CCList.Assoc.get ~eq:Name.equal v monomes with
+  | None -> { monomes; constant }
+  | Some k -> 
+    let monomes = CCList.Assoc.remove ~eq:Name.equal v monomes in
+    let constant = constant + k * n in
+    { monomes; constant }
+
+let simplify { monomes ; constant } =
+  let monomes = List.filter (fun (_,i) -> i <> 0) monomes in
+  { monomes ; constant }
+
+let plus e1 e2 = simplify @@ map2 (+) e1 e2
 
 let const constant = { monomes = [] ; constant }
 let zero = const 0
@@ -68,6 +83,11 @@ let decr x = x + (const (-1))
 let min e = e.constant
 let is_nullable e = min e = 0
 
+let is_constant e = match simplify e with
+  | { monomes = [] ; constant } -> Some constant
+  | _ -> None
+let is_zero e = is_constant e = Some 0
+                      
 let need_parens = function
   | { constant = 0 ; monomes = [_] }
   | { monomes = []; _} -> false

@@ -1,121 +1,185 @@
-type mult_field = {
+type t = [] | (::) of single * t
+and single =
+  | Word of word
+  | Monome of monome
+and monome = {
   index : Index.t ;
-  mov : Field.t ;
-  suffix : Field.t ;
+  word : word ;
 }
-
-let equal_field l1 l2 =
-  CCList.equal
-    (fun (f1 : Field.field) f2 -> f1.pos = f2.pos && Types.equal f1.ty f2.ty)
-    l1 l2
-
-
-type t = [] | (::) of Field.t * mult
-and mult = [] | (::) of mult_field option * layers
-and layers = [] | (::) of Index.t * stop
-and stop = []
+and word = char list
+and char = Any | Field of Field.field
 
 type path = t
 
-let vars : t -> _ = function
-  | [ x ; Some { index ; _ } ; idx2 ] ->
-    Name.Set.union (Index.vars index) (Index.vars idx2)
-  | [ x ; Some { index ; _ } ] ->
-    Index.vars index
-  | [ x ; None ; idx2 ] ->
-    Index.vars idx2
-  | l -> Name.Set.empty
+let rec vars : t -> _ = function
+  | [] -> Name.Set.empty
+  | Word _ :: t ->
+    vars t
+  | Monome { index ; _ } :: t ->
+    Name.Set.union (Index.vars index) (vars t)
 
-let refresh : t -> t = function
-  | [ x ; Some ({ index ; _ } as mult) ; idx2 ] ->
-    [ x ; Some {mult with index = Index.refresh_name index} ;
-      Index.refresh_name idx2 ]
-  | [ x ; Some ({ index ; _ } as mult) ] ->
-    [ x ; Some {mult with index = Index.refresh_name index} ]
-  | [ x ; None ; idx2 ] ->
-    [ x ; None ; Index.refresh_name idx2 ]
-  | l -> l
+let rec refresh : t -> t = function
+  | [] -> []
+  | Word w :: t ->
+    Word w :: refresh t
+  | Monome ({ index ; _ } as mov) :: t ->
+    let index = Index.refresh_name index in
+    Monome {mov with index} :: t
 
 let empty : t = []
-let down ty pos : t = [{Field. ty; pos}] :: []
-let of_fields : Field.t -> t = fun l -> [l]
+let down ty pos : t = [Word [Field {ty; pos}]]
+let many word index : t = [Monome { index ; word }]
+let word : word -> t = function [] -> [] | word -> [Word word]
+let wild index : t = [Monome { index ; word = [Any] }]
+let of_fields : Field.t -> word
+  = fun l -> List.map (fun x -> Field x) l
+let word_of_fields l = word @@ of_fields l
+let rec (++) e1 e2 = match e1 with
+  | [] -> e2
+  | h :: t -> h :: (t ++ e2)
+        
+module Word = struct
 
-let simplify (p : t) =
-  let count_times_prefix_and_split ~prefix l =
-    let rec take_prefix previous_rest curr_prefix l = match curr_prefix, l with
-      | List.[], List.[] -> 1, List.[]
-      | _, [] -> 0, previous_rest
-      | [], rest ->
-        let n, rest = take_prefix rest prefix rest in
-        n+1, rest
-      | h :: t, h' :: t' ->
-        if h = h' then take_prefix previous_rest t t' else 0, previous_rest
+  type t = word
+
+  let pp_char fmt = function
+    | Field f -> Field.pp_field fmt f
+    | Any -> Fmt.pf fmt ".φ"
+  let pp fmt = Fmt.(list ~sep:nop pp_char) fmt
+  
+  let equal_char (c1 : char) (c2 : char) = match c1, c2 with
+    | Any, Any -> true
+    | Field f1, Field f2 ->
+      CCInt.equal f1.pos f2.pos && Types.equal f1.ty f2.ty
+    | Any, Field _ | Field _, Any -> false
+  let equal (w1 : t) w2 = CCList.equal equal_char w1 w2
+  
+  let match_char (c1 : char) (c2 : char) = match c1, c2 with
+    | Any, _ | _, Any -> true
+    | Field f1, Field f2 ->
+      CCInt.equal f1.pos f2.pos && Types.equal f1.ty f2.ty
+  let match_ (w1 : t) w2 = CCList.equal match_char w1 w2
+
+  let empty : t = []
+  let length = List.length
+
+  (** [conflict p1 p2] check if one path is prefix of the other.
+      Return which one is shortest, along with the extra bits *)
+  let rec conflict (p1 : word) (p2 : word) = match p1, p2 with
+    | [], [] -> Some (`eq, empty)
+    | [], l -> Some (`left, l)
+    | l, [] -> Some (`right, l)
+    | _::t1, Any::t2 | Any::t1, _::t2 ->
+      conflict t1 t2
+    | Field x1::t1, Field x2::t2 ->
+      if x1 = x2 then conflict t1 t2
+      else None
+
+  (** [count_prefix_and_split ~prefix w] returns [i,rest]
+      such that [w = prefix^i ++ rest].
+   **)
+  let count_prefix_and_split ~prefix l =
+    let len = List.length prefix in
+    let rec take_prefix acc l =
+      let start, rest = CCList.take_drop len l in
+      if equal start prefix then
+        take_prefix (acc + 1) rest
+      else
+        acc, l
     in
-    take_prefix l prefix l
-  in
-  match p with
-  | [] | [ [] ] | [ [] ; None ] -> []
-  | [ fields ] | [ fields ; None ] -> [ fields ]
-  | _ :: None :: _ as l -> l
-  | before :: Some { index; mov; suffix } :: after ->
-    let i, before =
-      count_times_prefix_and_split ~prefix:(List.rev mov) (List.rev before)
+    take_prefix 0 l
+
+  let count_suffix_and_split ~suffix l =
+    let i, rest =
+      count_prefix_and_split ~prefix:(List.rev suffix) (List.rev l)
     in
-    let j, suffix =
-      count_times_prefix_and_split ~prefix:mov suffix
+    i, List.rev rest
+      
+
+  (** [as_monome w] expresses [w] as a monome:
+      Either w = r^i or w is not a power.
+   **)
+  let as_monome (w : word) =
+    let len = List.length w in
+    let rec try_increasing_prefix acc : word -> _ = function
+      | [] -> None
+      | h :: t ->
+        let acc = List.cons h acc in
+        let potential_root = List.rev acc in
+        let potential_len = List.length potential_root in
+        let k = len/potential_len in
+        if equal w (CCList.repeat k potential_root) then
+          Some (k, potential_root)
+        else
+          try_increasing_prefix acc t
     in
-    let index = Index.(index + const i + const j) in
-    List.rev before :: Some { index ; mov ; suffix } :: after
+    try_increasing_prefix List.[] w
 
+end
+  
+let pp_monome fmt { index; word } =
+  match word with
+  | [_] -> Fmt.pf fmt "%a^%a" Word.pp word Index.pp_parens index
+  | _ -> Fmt.pf fmt "(%a)^%a" Word.pp word Index.pp_parens index
 
+let simplify_monome m =
+  match Word.as_monome m.word with
+  | None -> m
+  | Some (pow, word) ->
+    let index = Index.mult pow m.index in
+    { index ; word }
 
-let rec pp fmt (c: path) = match simplify c with
-  | [] -> Fmt.pf fmt "[]"
-  | f :: t -> Field.pp fmt f; pp_mult fmt t
-and pp_mult fmt = function
+let rec simplify re = match re with
+  | [] -> re
+  | Word [] :: t ->
+    simplify t
+  | Word w :: t ->
+    let t = simplify t in
+    begin match t with
+      | Word w' :: t -> 
+        Word (w @ w') :: t
+      | Monome { index; word } :: t ->
+        let i, rest = Word.count_suffix_and_split ~suffix:word w in
+        let index = Index.(index + const i) in
+        begin match rest with
+          | [] -> Monome { index ; word } :: t  
+          | rest -> Word rest :: Monome { index ; word } :: t
+        end
+      | [] -> [Word w]
+    end
+  | Monome m :: t ->
+    let { index ; word } = simplify_monome m in
+    let t = simplify t in
+    begin match t with
+      | Word w :: t ->
+        let i, rest = Word.count_prefix_and_split ~prefix:word w in
+        let index = Index.(index + const i) in
+        Monome { index ; word } :: Word rest :: t
+      | Monome { index = index2 ; word = word2 } :: t
+        when Word.equal word word2 ->
+        let index = Index.(index + index2) in
+        Monome { index ; word } :: t
+      | _ ->
+        Monome { index ; word } :: t
+    end
+
+let rec pp fmt (p: path) = match simplify p with
   | [] -> ()
-  | None :: t ->
-    pp_layer fmt t
-  | Some { index; mov; suffix } :: t ->
-    begin match mov with
-      | [_] -> Fmt.pf fmt "%a^%a" Field.pp mov Index.pp_parens index
-      | _ -> Fmt.pf fmt "(%a)^%a" Field.pp mov Index.pp_parens index
-    end;
-    Field.pp fmt suffix;
-    pp_layer fmt t
-and pp_layer fmt = function
-  | [] -> ()
-  | index :: [] ->
-    Fmt.pf fmt ".φ^%a" Index.pp_parens index
+  | Word w :: t -> Word.pp fmt w; pp fmt t
+  | Monome f :: t -> pp_monome fmt f; pp fmt t
 
-(** Utilities for building constraint and linear forms *)
-
-let lenf l = List.length l
-let len l = Index.const @@ List.length l
-let len_layer : layers -> _ =
-  function [] -> Index.const 0 | [index] -> index
-
-(** The length of a mult segment in a path, as a linear form *)
-let length_mult { index ; mov ; suffix } =
-  Index.( lenf mov *@ index + len suffix )
 
 (** The length of a path, as a linear form *)
-let length p =
-  let rec aux : t -> Index.t = function
-    | [] -> Index.const 0
-    | l :: rest ->
-      let l_prefix = len l in
-      let r = aux_mult rest in
-      Index.(l_prefix + r)
-  and aux_mult = function
-    | [] -> Index.const 0
-    | None::rest -> aux_wild rest
-    | Some m ::rest -> Index.(length_mult m + aux_wild rest)
-  and aux_wild = function
-    | [] -> Index.const 0
-    | idx::[] -> idx
-  in
-  aux p
+let rec length : t -> Index.t = function
+  | [] -> Index.const 0
+  | Word w :: rest ->
+    let l = Word.length w in
+    Index.(const l + length rest)
+  | Monome m :: rest ->
+    let l = length_monome m in
+    Index.(l + length rest)
+and length_monome { index ; word } =
+  Index.( Word.length word *@ index )
 
 open Constraint
 
@@ -133,7 +197,6 @@ module Domain = struct
 
 end
 
-
 (** Computation of Q_(m,m'), the polyhedron of dependencies between two paths. *)
 module Dependencies = struct
 
@@ -143,95 +206,112 @@ module Dependencies = struct
     else
       ff
 
-  let is_nullable = function
-    | [] | [[]] | [ [] ; None ] -> tt
-    | _ :: Some { index ; mov = _ ; suffix = [] } :: [] ->
-      index_nullable index
-    | _ :: Some { index ; mov = _ ; suffix = [] } :: index2 :: [] ->
-      let index' = Index.plus index index2 in
-      index_nullable index'
-    | _ :: None :: index2 :: [] ->
-      index_nullable index2
-    | (_::_) :: _
-    | _ :: Some { suffix = (_::_) } :: _
-      -> ff
-
-  let overlap_no_mult (prefix1,wild1) (prefix2,wild2) =
-    match Field.conflict prefix1 prefix2 with
-    | None -> ff
-    | Some _ -> 
-      Index.(
-        len_layer wild1 + len prefix1 === len_layer wild2 + len prefix2
-      )
-
-  let rec overlap_one_mult (prefix1,{ index; mov; suffix },wild1) (prefix2,wild2) =
-    match Field.conflict prefix1 prefix2 with
-    | None -> ff
-    | Some (`eq, _) ->
-      Index.(
-        (lenf mov *@ index) + len suffix + len_layer wild1 ===
-        len_layer wild2
-      )
-    | Some (`right, m) ->
-      Index.(
-        len m + (lenf mov *@ index) + len suffix + len_layer wild1 ===
-        len_layer wild2
-      )
-    | Some (`left, m) ->
-      let b1 =
-        (index === Index.const 0) &&&
-        overlap_no_mult (suffix, wild1) (m, wild2)
-      and b2 =
-        overlap_one_mult
-          (mov, {index = Index.decr index;mov;suffix}, wild1)
-          (m, wild2)
-      in
-      b1 ||| b2
-
-  let overlap_two_mult (prefix1, mult1, wild1) (mult2, wild2) =
-    match prefix1, mult1, mult2 with
-    | (List.[],
-       { index = idx1; mov = mov1; suffix = suffix1 },
-       { index = idx2; mov = mov2; suffix = suffix2 })
-      when equal_field mov1 mov2 ->
-      (idx1 === idx2) &&&
-      Index.(len suffix1 + len_layer wild1 === len suffix2 + len_layer wild2)
-    | _ ->
-      (* Here, we give up and just use lengths instead *)
-      let idx1 : path = prefix1 :: Some mult1 :: wild1 in
-      let idx2 : path = [] :: Some mult2 :: wild2 in
-      length idx1 === length idx2
-
-  let overlap (p1:path) (p2:path) = match simplify p1, simplify p2 with
+  let rec is_nullable : path -> _ = function
+    | [] -> tt
+    | Word [] :: t ->
+      is_nullable t
+    | Word _ :: _ ->
+      ff
+    | Monome { word = [] ; _ } :: t ->
+      is_nullable t
+    | Monome { index ; word = _ } :: t ->
+      index_nullable index &&& is_nullable t
+        
+  let rec overlap (p1:path) (p2:path) = match simplify p1, simplify p2 with
     (* Both are empty *)
-    | ([] | [[]] | [ [] ; None ]),
-      ([] | [[]] | [ [] ; None ]) -> tt
+    | ([] | [Word []]), ([] | [Word []]) -> tt
     (* One of them is empty *)
-    | l, ([] | [[]] | [ [] ; None ])
-    | ([] | [[]] | [ [] ; None ]), l
+    | l, ([] | [Word []])
+    | ([] | [Word []]), l
       -> is_nullable l
-    (* Without multiple, but potentially with wildcards *)
-    | l1::None::rest1 , l2::None::rest2 -> overlap_no_mult (l1,rest1) (l2, rest2)
-    | l1::None::rest1 , l2::[]          -> overlap_no_mult (l1,rest1) (l2, [])
-    | l1::[]          , l2::None::rest2 -> overlap_no_mult (l1,[]) (l2, rest2)
-    | l1::[]          , l2::[]          -> overlap_no_mult (l1,[]) (l2, [])
-    (* With multiple on one side *)
-    | l1::Some mult1 :: rest1, l2 :: None :: rest2
-    | l2 :: None :: rest2, l1::Some mult1 :: rest1
-      -> overlap_one_mult (l1, mult1, rest1) (l2,rest2)
-    | l1::Some mult1 :: rest1, l2 :: []
-    | l2 :: [], l1::Some mult1 :: rest1
-      -> overlap_one_mult (l1, mult1, rest1) (l2,[])
-    (* With multiple on both side *)
-    | []::(Some mult1)::wild1, []::(Some mult2)::wild2 ->
-      overlap_two_mult (Field.empty,mult1,wild1) (mult2, wild2)
-    | l1::(Some mult1)::wild1, l2::(Some mult2)::wild2 ->
-      match Field.conflict l1 l2 with
-      | None -> ff
-      | Some ((`eq|`left), m) ->
-        overlap_two_mult (m,mult2,wild2) (mult1, wild1)
-      | Some (`right, m) ->
-        overlap_two_mult (m,mult1,wild1) (mult2, wild2)
+    (* w1 == w2 ++ w'    rest1 == w' ++ rest2
+       --------------------------------------
+            w1 ++ rest1 == w2 ++ rest2
+    *)
+    | Word w1 :: rest1,
+      Word w2 :: rest2 ->
+      begin match Word.conflict w1 w2 with
+        | Some (`eq,_) -> overlap rest1 rest2
+        | Some (`right, w1) -> overlap (Word w1 :: rest1) rest2
+        | Some (`left, w2) -> overlap rest1 (Word w2 :: rest2)
+        | None -> ff
+      end
+    | Word w1 :: rest1, Monome { index ; word } :: rest2
+    | Monome { index ; word } :: rest2, Word w1 :: rest1 ->
+      begin match Word.conflict w1 word with
+        (* w1, w don't conflict      f == 0     w1 ++ rest1 == rest2
+           ---------------------------------------------------------
+                w1 ++ rest1 == w^f ++ rest2
+        *)
+        | None ->
+          index_nullable index &&&
+          overlap (Word w1 :: rest1) rest2
+        (* w1 = w      rest1 == w^(f-1) ++ rest2
+           -------------------------------------
+                w1 ++ rest1 == w^f ++ rest2
+        *)
+        | Some (`eq, _) ->
+          let index = Index.decr index in
+          overlap rest1 (Monome { index ; word } :: rest2)
+        (* w1 = w ++ w'    w' ++ rest1 == w^(f-1) ++ rest2
+           -----------------------------------------------
+                     w1 ++ rest1 == w^f ++ rest2
+        *)
+        | Some (`left, w') ->
+          let index = Index.decr index in
+          overlap (Word w' :: rest1) (Monome { index ; word } :: rest2)
+        (* w1 ++ w' = w    rest1 == (w' ++ w1)^(f-1) ++ w' ++ rest2
+           -----------------------------------------------
+                     w1 ++ rest1 == w^f ++ rest2
+        *)
+        | Some (`right, w') ->
+          let index = Index.decr index in
+          let word = w' @ w1 in
+          overlap rest1 (Monome { index ; word } :: Word w' :: rest2)
+      end
+
+    (* Invariants:
+       - Monomes are made of their simplest root.
+       - The next monome doesn't have the same root.
+       - The next word doesn't have a prefix that can be merged into the monome.
+    *)
+    (* f1 + n = f2    w^n ++ rest1 == rest2
+       ------------------------------------
+          w^f1 ++ rest1 == w^f2 ++ rest2
+    *)
+    | Monome { index = index1 ; word = word } :: rest1,
+      Monome { index = index2 ; word = word' } :: rest2
+      when Word.match_ word word' ->
+      let cond1 =
+        Constraint.with_dummy_var (fun n ->
+            Index.(index1 + Index.var n === index2) &&&
+            overlap (Monome { index = Index.var n ; word } :: rest1) rest2
+          )
+      and cond2 =
+        Constraint.with_dummy_var (fun n ->
+            Index.(index1 === index2 + Index.var n) &&&
+            overlap rest1 (Monome { index = Index.var n ; word } :: rest2)
+          )
+      in
+      cond1 ||| cond2
+
+    (* ∧{k1=0..|w2|,k2=0..|w1|}
+       (f1=k1   f2=k2   w1^k1 ++ rest1 == w2^k2 ++ rest2)
+       --------------------------------------------------
+               w1^f1 ++ rest1 == w2^f2 ++ rest2
+    *)
+    | Monome { index = index1 ; word = word1 } :: rest1,
+      Monome { index = index2 ; word = word2 } :: rest2 ->
+      let l1 = Word.length word1 and l2 = Word.length word2 in
+      let all_combinations =
+        CCList.(product CCPair.make (range 0 l2) (range 0 l1))
+        |> List.map (fun (k1, k2) ->
+            let w1' = CCList.repeat k1 word1 and w2' = CCList.repeat k2 word2 in
+            (index1 === Index.const k1) &&& (index2 === Index.const k2) &&&
+            overlap (Word w1' :: rest1) (Word w2' :: rest2)
+          )
+      in
+      Constraint.or_ all_combinations
 
   let constraint_len p1 p2 =
     let n = Index.var "N" in
@@ -241,7 +321,7 @@ module Dependencies = struct
       &&& (Index.zero ==< length p2)
       &&& (length p2 ==< n)
     )
-  
+
   let make p1 p2 =
     Constraint.(constraint_len p1 p2 &&& overlap p1 p2)
 end

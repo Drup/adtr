@@ -76,16 +76,16 @@ let positivity_constraints g =
       let l = src_slots @ dest_slots in
       let constrs = Constraint.and_ (List.map (Path.Domain.make n) l) in
       let system = linearform_of_constraint constrs in
-      Fmt.epr "@[<v2>D_%a:@ %a@]@."
-        Name.pp name
-        (Fmt.list Index.pp) system
-        ;
+      (* Fmt.epr "@[<v2>D_%a:@ %a@]@."
+       *   Name.pp name
+       *   (Fmt.list Index.pp) system
+       *   ; *)
       let lamVec = List.map (fun _ -> Name.fresh ("λ" ^ name)) system in
       let lam0 = Name.fresh ("λ0" ^ name) in
       let lf = LF.wrap ~multipliers:lamVec ~const:lam0 system in
-      Fmt.epr "@[<v2>σ(%a) =@ %a@]@."
-        Name.pp name
-        LF.pp lf;
+      (* Fmt.epr "@[<v2>σ(%a) =@ %a@]@."
+       *   Name.pp name
+       *   LF.pp lf; *)
       (G.V.Map.add m (lamVec,lam0) lams, G.V.Map.add m lf sigma)
     )
     g (G.V.Map.empty, G.V.Map.empty)
@@ -94,10 +94,10 @@ let increasing_constraints sigmas g =
   G.fold_edges_e (fun edge (mus, epsilons, constrs) ->
       let src, q_edge, dest = edge in
       let system = linearform_of_constraint @@ Constraint.and_ q_edge in
-      Fmt.epr "@[<v2>Q_(%a,%a):@ %a@]@."
-        Name.pp src.name Name.pp dest.name
-        (Fmt.list Index.pp) system
-        ;
+      (* Fmt.epr "@[<v2>Q_(%a,%a):@ %a@]@."
+       *   Name.pp src.name Name.pp dest.name
+       *   (Fmt.list Index.pp) system
+       *   ; *)
       let muVec = List.map (fun _ -> Name.fresh ("μ")) system in
       let mu0 = Name.fresh ("μ0") in
       let lf1 = LF.wrap ~multipliers:muVec ~const:mu0 system in
@@ -106,10 +106,10 @@ let increasing_constraints sigmas g =
       let sigma_src = G.V.Map.find src sigmas in
       let sigma_dest = Index.refresh_name @@ G.V.Map.find dest sigmas in
       let lf2 = LF.(sigma_dest - sigma_src - constvar epsilon) in
-      Fmt.epr "@[<v2>Eq_(%a,%a):@ %a@ =@ %a@]@."
-        Name.pp src.name Name.pp dest.name
-        LF.pp lf2 LF.pp lf1
-        ;
+      (* Fmt.epr "@[<v2>Eq_(%a,%a):@ %a@ =@ %a@]@."
+       *   Name.pp src.name Name.pp dest.name
+       *   LF.pp lf2 LF.pp lf1
+       *   ; *)
       let new_constrs = identify_factors lf1 lf2 in
 
       (G.E.Map.add edge (muVec,mu0) mus,
@@ -131,8 +131,8 @@ let all_vars f it =
 let make_constraints g =
   let lambdas, sigmas = positivity_constraints g in
   let mus, epsilons, constraints = increasing_constraints sigmas g in
-  Fmt.epr "@[<v2>Constraints after Farkas:@ %a@]@."
-    (Fmt.list Constraint.pp) constraints;
+  (* Fmt.epr "@[<v2>Constraints after Farkas:@ %a@]@."
+   *   (Fmt.list Constraint.pp) constraints; *)
 
   (* All 0 ≤ λ *)
   let lambdas_constraints =
@@ -169,19 +169,19 @@ let solve_with_smt constraints optims =
   let formula = Encode2SMT.constraint2smt vars constraints in
   let optims = Encode2SMT.index2smt vars optims in
   let optim_sum = Encode2SMT.ZZ.Symbol.term Int optims in
-  Fmt.epr "@[<v2>Formula:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify formula) ;
-  Fmt.epr "@[<v2>Optim:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify optims) ;
+  (* Fmt.epr "@[<v2>Formula:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify formula) ;
+   * Fmt.epr "@[<v2>Optim:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify optims) ; *)
   let res =
     let open Encode2SMT.ZZ.Optimize in
     let solver = make () in
     add ~solver formula;
     let _ = maximize ~solver optims in
-    Fmt.epr "@[<v>Solver:@ %s@]@." (Z3.Optimize.to_string solver) ;
+    (* Fmt.epr "@[<v>Solver:@ %s@]@." (Z3.Optimize.to_string solver) ; *)
     check ~solver []
   in
   begin match res with
     | Sat (lazy model) ->
-      Fmt.epr "@[<v2>Model:@ %s@." (Z3.Model.to_string model);
+      (* Fmt.epr "@[<v2>Model:@ %s@." (Z3.Model.to_string model); *)
       if Z.equal Z.zero @@ Encode2SMT.ZZ.Model.get_value ~model optim_sum then
         None
       else
@@ -207,7 +207,7 @@ let mk_schedule1D formula sigmas epsilons =
   let max_criterion = mk_max_criterion epsilons in
   match solve_with_smt formula max_criterion with
   | None ->
-    Fmt.epr "No schedule@.";
+    (* Fmt.epr "No schedule@."; *)
     None
   | Some f ->
     let sched1D = compute_schedule f sigmas in

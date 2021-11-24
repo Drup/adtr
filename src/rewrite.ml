@@ -132,9 +132,6 @@ module Layer = struct
 
   let conflict p1 p2 : conflict option =
     Encode2SMT.check_conflict p1 p2
-
-  let one (fields, mult) : Path.t = [ fields ; mult]
-  let many k (fields, mult) : Path.t = [ fields ; mult ; k]
 end
 
 
@@ -146,7 +143,7 @@ let error e = raise @@ Error e
 
 let subtree2layer tyenv (r : Field.t t) =
   let transl_movement_scalar mov : Path.t movement list =
-    [map_movement Layer.one mov]
+    [mov]
   in
   let transl_movement_no_conflict mov =
     (* INVARIANT: src and dest are not conflicting *)
@@ -154,7 +151,7 @@ let subtree2layer tyenv (r : Field.t t) =
       transl_movement_scalar mov
     else
       let k = Index.var @@ Name.fresh "k" in
-      [map_movement (Layer.many k) mov]
+      [map_movement (fun e -> Path.(e ++ wild k)) mov]
   in
   let transl_movement_conflict name ty src dest mov =
     (* Report.infof "Rewrite"
@@ -184,7 +181,9 @@ let subtree2layer tyenv (r : Field.t t) =
     let cell_moves =
       let mk_move suffix =
         let f prefix : Path.t =
-          Layer.one (prefix, Some {Path. index ; mov ; suffix })
+          Path.(word (of_fields prefix) ++
+                many (Path.of_fields mov) index ++
+                word (of_fields suffix))
         in
         let name = Fmt.str "%s%a" name Field.pp_top suffix in
         let src =  Slot (position (f src)) in
@@ -195,7 +194,11 @@ let subtree2layer tyenv (r : Field.t t) =
     in
     let cursor_moves = 
       let mk_move (suffix, ty) =
-        let f pref = (pref, Some {Path. index ; mov ; suffix }) in
+        let f prefix : Path.t =
+          Path.(word_of_fields prefix ++
+                many (Path.of_fields mov) index ++
+                word_of_fields suffix)
+        in
         let name = Fmt.str "%s%a" name Field.pp_top suffix in
         let src =  Slot (position (f src)) in
         let dest = Some (f dest) in
@@ -210,7 +213,7 @@ let subtree2layer tyenv (r : Field.t t) =
     | Slot (Position (_, l)), Some l' when l = l' -> []
     | _, None -> []
     | _, _ when Types.is_scalar ty ->
-      let f = map_movement (fun l -> (l, None)) f in
+      let f = map_movement (fun l -> Path.word_of_fields l) f in
       transl_movement_scalar f
     | Slot _ as srcs, Some dest ->
       begin match paths_of_src srcs with
@@ -219,11 +222,11 @@ let subtree2layer tyenv (r : Field.t t) =
             | Some (_, mov) ->
               transl_movement_conflict name ty src dest mov
             | None ->
-              let f = map_movement (fun l -> (l, None)) f in
+              let f = map_movement (fun l -> Path.word_of_fields l) f in
               transl_movement_no_conflict f
           end
         | [] -> 
-          let f = map_movement (fun l -> (l, None)) f in
+          let f = map_movement (fun l -> Path.word_of_fields l) f in
           transl_movement_no_conflict f
         | _ ->
           error @@ Not_supported f
@@ -301,9 +304,9 @@ module DepGraph (Mem : MEM) = struct
           if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box
         in
         let label =
-          Fmt.str "%a\n%a\n%a → %a%a"
+          Fmt.str "%a\n%a\n%a ← %a%a"
             Name.pp name Printer.types ty
-            (pp_src Mem.pp) src (pp_dest Mem.pp) dest
+             (pp_dest Mem.pp) dest (pp_src Mem.pp) src
             Mem.pp_extra x
         in
         [shape; `Label label]
