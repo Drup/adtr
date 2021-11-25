@@ -46,7 +46,7 @@ let (==<) (x1 : _ Index.index) (x2 : _ Index.index) =
     let c = Index.const (- (min i1 i2)) in
     Constr (Leq Index.(x1 + c, x2 + c))
 
-let uniq l = CCList.uniq ~eq:(=) l
+let uniq l = CCList.sort_uniq ~cmp:compare l
 
 let mk_or l = match uniq l with
   | [] -> False
@@ -73,6 +73,17 @@ let (&&&) x1 x2 = match x1, x2 with
 let and_ l = List.fold_left (&&&) tt l
 let or_ l = List.fold_left (|||) ff l
 
+let rec wnf f = match f with
+  | True -> [ [] ]
+  | False -> []
+  | Constr c -> [ [c] ] 
+  | Or l -> List.concat_map wnf l
+  | And l ->
+    CCList.map_product_l wnf l
+    |> List.map List.flatten
+
+let from_wnf l =
+  or_ @@ List.map (fun l -> and_ @@ List.map (fun x -> Constr x) l)  l
 
 let rec present v = function
   | Constr (Leq (i1, i2)) 
