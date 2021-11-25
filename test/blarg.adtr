@@ -1,0 +1,17 @@
+type t = Node (t)
+
+erase1 (x:t) : t = rewrite x {
+  | Node(Node (Node (x))) -> x
+}
+(*EXPECT
+erase1 (x : t) : t = rewrite x {
+  | (x[]:t | .t@0^3*k₀ ← .t@0^(3*k₀ + 3))
+    (x.t@0:t | .t@0^(3*k₀ + 1) ← .t@0^(3*k₀ + 4))
+    (x.t@0.t@0:t | .t@0^(3*k₀ + 2) ← .t@0^(3*k₀ + 5))
+}
+
+Schedule: x.t@0 -> (6*k₀ + N + -1)
+          x.t@0.t@0 -> (6*k₀ + N + -2)
+          x[] -> (6*k₀ + N)
+
+*)
