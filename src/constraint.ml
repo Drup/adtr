@@ -122,15 +122,3 @@ let rec subst v n = function
     and_ @@ List.map (subst v n) l
   | Or l ->
     or_ @@ List.map (subst v n) l
-
-let with_dummy_var mk =
-  let v = Name.fresh "dummy" in
-  let f = mk v in
-  match eval v f with
-  | None ->
-    if present v f then
-      invalid_arg "Couldn't erase dummy var"
-    else
-      f
-  | Some n ->
-    subst v n f

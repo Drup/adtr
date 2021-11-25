@@ -33,13 +33,13 @@ let check_conflict p1 p2 =
   (* Fmt.epr
    *   "@[<v2>Formula for conflict between@ %a@ %a"
    *   Path.pp p1 Path.pp p2
-   * ;
-   * Fmt.epr
+   * ; *)
+  (* Fmt.epr
    *   ":@ %s@;<-2>Simplified:@ %s"
    *   (T.to_string formula)
    *   (T.to_string @@ T.simplify formula)
-   * ;
-   * Fmt.epr "@]@."; *)
+   * ; *)
+  (* Fmt.epr "@]@."; *)
   begin match Solver.(check ~solver:(make ()) [formula]) with
     | Sat _model ->
       Some e

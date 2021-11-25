@@ -8,11 +8,11 @@ type 'a index = {
 type t = int index
 
 
-let refresh_name p =
+let refresh_name { monomes; constant } =
   let monomes =
-    List.map (fun (var,f) -> (Name.refresh var, f)) p.monomes
+    List.map (fun (var,f) -> (Name.refresh var, f)) monomes
   in 
-  { p with monomes }
+  { monomes ; constant }
 
 let vars x = List.map fst x.monomes |> Name.Set.of_list
 

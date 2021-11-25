@@ -1,3 +1,6 @@
+
+let rec hcf a b = if b = 0 then a else hcf b (a mod b)
+
 type t = [] | (::) of single * t
 and single =
   | Word of word
@@ -22,9 +25,9 @@ let rec refresh : t -> t = function
   | [] -> []
   | Word w :: t ->
     Word w :: refresh t
-  | Monome ({ index ; _ } as mov) :: t ->
+  | Monome { index ; word } :: t ->
     let index = Index.refresh_name index in
-    Monome {mov with index} :: t
+    Monome { index ; word } :: refresh t
 
 let empty : t = []
 let down ty pos : t = [Word [Field {ty; pos}]]
@@ -167,7 +170,7 @@ let rec pp fmt (p: path) = match simplify p with
   | [] -> ()
   | Word w :: t -> Word.pp fmt w; pp fmt t
   | Monome f :: t -> pp_monome fmt f; pp fmt t
-
+let pp_path = pp
 
 (** The length of a path, as a linear form *)
 let rec length : t -> Index.t = function
@@ -282,35 +285,50 @@ module Dependencies = struct
     | Monome { index = index1 ; word = word } :: rest1,
       Monome { index = index2 ; word = word' } :: rest2
       when Word.match_ word word' ->
-      let cond1 =
-        Constraint.with_dummy_var (fun n ->
-            Index.(index1 + Index.var n === index2) &&&
-            overlap (Monome { index = Index.var n ; word } :: rest1) rest2
-          )
-      and cond2 =
-        Constraint.with_dummy_var (fun n ->
-            Index.(index1 === index2 + Index.var n) &&&
-            overlap rest1 (Monome { index = Index.var n ; word } :: rest2)
-          )
+      (* Thanks to the invariants, we know that the unfolding is *statically*
+         finite, and that only of the possibility is satisfiable *)
+      let n = Name.fresh "dummy" in
+      let mk_cond1 i =
+        Index.(index1 + i === index2) &&&
+        overlap (Monome { index = i ; word } :: rest1) rest2
+      and mk_cond2 i =
+        Index.(index1 === index2 + i) &&&
+        overlap rest1 (Monome { index = i ; word } :: rest2)
       in
-      cond1 ||| cond2
+      let cond1 = mk_cond1 (Index.var n) and cond2 = mk_cond2 (Index.var n) in
+      begin match Constraint.eval n cond1, Constraint.eval n cond2 with
+        | None, None ->
+          if present n cond1 && present n cond2 then
+            assert false (* Cannot determinine statically *)
+          else 
+            Index.(index1 === index2) &&& overlap rest1 rest2
+        | Some n, None -> mk_cond1 (Index.const n)
+        | None, Some n -> mk_cond2 (Index.const n)
+        | Some 0, Some 0 ->
+          Index.(index1 === index2) &&& overlap rest1 rest2
+        | Some _, Some _ ->
+          assert false (* Should never be satisfiable *)
+      end
 
-    (* ∧{k1=0..|w2|,k2=0..|w1|}
+    (* ∧{k1=0..|w2|/m,k2=0..|w1|/m} 
        (f1=k1   f2=k2   w1^k1 ++ rest1 == w2^k2 ++ rest2)
+       where m = HCF(|w1|,|w2|)
        --------------------------------------------------
                w1^f1 ++ rest1 == w2^f2 ++ rest2
     *)
     | Monome { index = index1 ; word = word1 } :: rest1,
       Monome { index = index2 ; word = word2 } :: rest2 ->
       let l1 = Word.length word1 and l2 = Word.length word2 in
+      let max1 = l2 / hcf l1 l2 and max2 = l1 / hcf l1 l2 in
       let all_combinations =
-        CCList.(product CCPair.make (range 0 l2) (range 0 l1))
+        CCList.(product CCPair.make (range 0 max1) (range 0 max2))
         |> List.map (fun (k1, k2) ->
             let w1' = CCList.repeat k1 word1 and w2' = CCList.repeat k2 word2 in
             (index1 === Index.const k1) &&& (index2 === Index.const k2) &&&
             overlap (Word w1' :: rest1) (Word w2' :: rest2)
           )
       in
+      (* Again, only one combination should be satisfiable. *)
       Constraint.or_ all_combinations
 
   let constraint_len p1 p2 =
@@ -323,5 +341,5 @@ module Dependencies = struct
     )
 
   let make p1 p2 =
-    Constraint.(constraint_len p1 p2 &&& overlap p1 p2)
+    Constraint.(overlap p1 p2)
 end
