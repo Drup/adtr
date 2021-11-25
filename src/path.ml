@@ -286,8 +286,7 @@ module Dependencies = struct
       Monome { index = index2 ; word = word' } :: rest2
       when Word.match_ word word' ->
       (* Thanks to the invariants, we know that the unfolding is *statically*
-         finite, and that only of the possibility is satisfiable *)
-      let n = Name.fresh "dummy" in
+         finite, and that only one of the possibility is satisfiable *)
       let mk_cond1 i =
         Index.(index1 + i === index2) &&&
         overlap (Monome { index = i ; word } :: rest1) rest2
@@ -295,11 +294,12 @@ module Dependencies = struct
         Index.(index1 === index2 + i) &&&
         overlap rest1 (Monome { index = i ; word } :: rest2)
       in
+      let n = Name.fresh "dummy" in
       let cond1 = mk_cond1 (Index.var n) and cond2 = mk_cond2 (Index.var n) in
       begin match Constraint.eval n cond1, Constraint.eval n cond2 with
         | None, None ->
           if present n cond1 && present n cond2 then
-            assert false (* Cannot determinine statically *)
+            assert false (* Cannot determine statically *)
           else 
             Index.(index1 === index2) &&& overlap rest1 rest2
         | Some n, None -> mk_cond1 (Index.const n)
@@ -330,15 +330,6 @@ module Dependencies = struct
       in
       (* Again, only one combination should be satisfiable. *)
       Constraint.or_ all_combinations
-
-  let constraint_len p1 p2 =
-    let n = Index.var "N" in
-    Constraint.(
-      (Index.zero ==< length p1)
-      &&& (length p1 ==< n)
-      &&& (Index.zero ==< length p2)
-      &&& (length p2 ==< n)
-    )
 
   let make p1 p2 =
     Constraint.(overlap p1 p2)
