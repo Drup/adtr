@@ -18,5 +18,5 @@ let rec conflict (p1:t) (p2:t) = match p1, p2 with
 let pp_field fmt {ty;pos} = Fmt.pf fmt ".%a@%i" Printer.types ty pos
 let pp = Fmt.(list ~sep:nop pp_field)
 let pp_top fmt = function
-  | [] -> Fmt.pf fmt "[]"
+  | [] -> Fmt.pf fmt "()"
   | l -> Fmt.(list ~sep:nop pp_field) fmt l

@@ -80,8 +80,8 @@ let positivity_constraints g =
        *   Name.pp name
        *   (Fmt.list Index.pp) system
        *   ; *)
-      let lamVec = List.map (fun _ -> Name.fresh ("λ" ^ name)) system in
-      let lam0 = Name.fresh ("λ0" ^ name) in
+      let lamVec = List.map (fun _ -> Name.fresh ("lam" ^ name)) system in
+      let lam0 = Name.fresh ("lam0" ^ name) in
       let lf = LF.wrap ~multipliers:lamVec ~const:lam0 system in
       (* Fmt.epr "@[<v2>σ(%a) =@ %a@]@."
        *   Name.pp name
@@ -98,11 +98,11 @@ let increasing_constraints sigmas g =
        *   Name.pp src.name Name.pp dest.name
        *   (Fmt.list Index.pp) system
        *   ; *)
-      let muVec = List.map (fun _ -> Name.fresh ("μ")) system in
-      let mu0 = Name.fresh ("μ0") in
+      let muVec = List.map (fun _ -> Name.fresh ("mu")) system in
+      let mu0 = Name.fresh ("mu0") in
       let lf1 = LF.wrap ~multipliers:muVec ~const:mu0 system in
 
-      let epsilon = Name.fresh ("ε") in
+      let epsilon = Name.fresh ("eps") in
       let sigma_src = G.V.Map.find src sigmas in
       let sigma_dest = Index.refresh_name @@ G.V.Map.find dest sigmas in
       let lf2 = LF.(sigma_dest - sigma_src - constvar epsilon) in
@@ -196,6 +196,36 @@ let solve_with_smt constraints optims =
     | Unsat _ ->
       None
   end 
+
+let solve_with_lp constraints optims =
+  let constraints = Constraint.wnf constraints in
+  let conj = match constraints with
+    | [x] -> x
+    | _ -> assert false
+  in
+  let vars = Encode2LP.H.create 17 in
+  let formula = Encode2LP.constraint2lp vars conj in
+  let optims = Encode2LP.index2lp vars optims in
+  (* Fmt.epr "@[<v2>Formula:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify formula) ;
+   * Fmt.epr "@[<v2>Optim:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify optims) ; *)
+  let res =
+    let problem = Lp.make (Lp.maximize optims) formula in
+    Lp_glpk.solve ~term_output:false problem
+  in
+  begin match res with
+    | Ok (opti, model) ->
+      (* Fmt.epr "@[<v2>Model:@ %s@." (Z3.Model.to_string model); *)
+      if opti = 0. then
+        None
+      else
+        let f v =
+          int_of_float @@
+          Lp.PMap.find (Encode2LP.H.find vars v) model
+        in
+        Some f
+    | Error _ ->
+      None
+  end
 
 let compute_schedule f sigmas =
   G.V.Map.map (LF.instanciate f) sigmas
