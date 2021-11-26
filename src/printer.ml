@@ -2,9 +2,9 @@ open Syntax
 
 let rec types fmt ty = match ty with
   | TInt -> Fmt.pf fmt "int"
-  | TVar name -> Fmt.pf fmt "'%a" Name.pp name
+  | TVar name -> Fmt.pf fmt "'%s" name
   | TConstructor {constructor; arguments = []} ->
-    Fmt.pf fmt "%a" Name.pp constructor
+    Fmt.pf fmt "%s" constructor
   | TFun ([args], ret) ->
     Fmt.pf fmt "%a -> %a"
       types args
@@ -14,6 +14,9 @@ let rec types fmt ty = match ty with
       (Fmt.list ~sep:Fmt.comma types) args
       types ret
   | TConstructor {constructor; arguments} ->
-    Fmt.pf fmt "%a (%a)"
-      Name.pp constructor
+    Fmt.pf fmt "%s (%a)"
+      constructor
       (Fmt.list ~sep:Fmt.comma types) arguments
+
+let constant fmt = function
+  | Int i -> Fmt.int fmt i

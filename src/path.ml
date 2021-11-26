@@ -15,19 +15,19 @@ and char = Any | Field of Field.field
 type path = t
 
 let rec vars : t -> _ = function
-  | [] -> Name.Set.empty
+  | [] -> Id.Set.empty
   | Word _ :: t ->
     vars t
   | Monome { index ; _ } :: t ->
-    Name.Set.union (Index.vars index) (vars t)
+    Id.Set.union (Index.vars index) (vars t)
 
-let rec refresh : t -> t = function
+let rec map_vars f : t -> t = function
   | [] -> []
   | Word w :: t ->
-    Word w :: refresh t
+    Word w :: map_vars f t
   | Monome { index ; word } :: t ->
-    let index = Index.refresh_name index in
-    Monome { index ; word } :: refresh t
+    let index = Index.map_vars f index in
+    Monome { index ; word } :: map_vars f t
 
 let empty : t = []
 let down ty pos : t = [Word [Field {ty; pos}]]
@@ -186,14 +186,16 @@ and length_monome { index ; word } =
 
 open Constraint
 
+let height_var = Id.global "N"
+    
 (** Computation of D_m, the polyhedron of the domain of a paths. *)
 module Domain = struct
 
-  let make hvar p =
+  let make p =
     let l = length p in
     (Index.const 0 ==< l) &&&
-    (l ==< hvar) &&&
-    Name.Set.fold
+    (l ==< Index.var height_var) &&&
+    Id.Set.fold
       (fun k f -> (Index.const 0 ==< Index.var k) &&& f)
       (vars p)
       tt
@@ -294,7 +296,7 @@ module Dependencies = struct
         Index.(index1 === index2 + i) &&&
         overlap rest1 (Monome { index = i ; word } :: rest2)
       in
-      let n = Name.fresh "dummy" in
+      let n = Id.fresh "dummy" in
       let cond1 = mk_cond1 (Index.var n) and cond2 = mk_cond2 (Index.var n) in
       begin match Constraint.eval n cond1, Constraint.eval n cond2 with
         | None, None ->

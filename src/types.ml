@@ -15,8 +15,8 @@ let prepare_error = function
     Some (Report.errorf "The type constructor %a is unbounded" Name.pp n)
   | Error (Bad_constructor (n, ty)) ->
     Some
-      (Report.errorf "The data constructor %a doesn't belong to the type %a."
-         Name.pp n Printer.types ty)
+      (Report.errorf "The data constructor %s doesn't belong to the type %a."
+         n Printer.types ty)
   | Error (No_constructor ty) ->
     Some
       (Report.errorf "The type %a doesn't have any constructors."
@@ -28,10 +28,10 @@ let () =
 
 let rec equal ty1 ty2 = match ty1, ty2 with
   | TInt, TInt -> true
-  | TVar a, TVar b -> Name.equal a b
+  | TVar a, TVar b -> String.equal a b
   | TConstructor { constructor = c1 ; arguments = a1 },
     TConstructor { constructor = c2 ; arguments = a2} ->
-    Name.equal c1 c2 && CCList.equal equal a1 a2
+    String.equal c1 c2 && CCList.equal equal a1 a2
   | _, _ -> false
 
 let is_scalar ty = match ty with

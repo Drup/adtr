@@ -1,6 +1,3 @@
-open Syntax
-
-
 (** Definition and utilities for rewrite constructs *)
 
 type 'a position =
@@ -9,11 +6,11 @@ type 'a position =
 
 type 'a expr =
   | Slot of 'a position
-  | App of name * 'a expr list
+  | App of Name.t * 'a expr list
   | Constant of Syntax.constant
 
 type 'a movement = {
-  name : Name.t ;
+  name : Id.t ;
   src : 'a expr ;
   dest : 'a option ;
   ty : Syntax.type_expr ;
@@ -22,11 +19,11 @@ type 'a movement = {
 type 'a clause = 'a movement list
 
 type 'a t = {
-  f : name ;
-  parameters : (name * type_expr) list;
-  return_ty: type_expr;
-  discriminant: name;
-  discriminant_ty: type_expr;
+  f : Name.t ;
+  parameters : (Name.t * Syntax.type_expr) list;
+  return_ty: Syntax.type_expr;
+  discriminant: Name.t;
+  discriminant_ty: Syntax.type_expr;
   clauses : 'a clause list;
 }
 
@@ -63,11 +60,8 @@ let pp_src1 pp_mem fmt = function
   | Position (Some n,p) -> Fmt.pf fmt "%a:%a" Name.pp n pp_mem p
   | External n -> Fmt.pf fmt "%a" Name.pp n
 
-let pp_constant fmt = function
-  | Int i -> Fmt.int fmt i
-
 let rec pp_src pp_mem fmt = function
-  | Constant c -> pp_constant fmt c
+  | Constant c -> Printer.constant fmt c
   | Slot x -> pp_src1 pp_mem fmt x
   | App (n, l) ->
     Fmt.pf fmt "%a(%a)"
@@ -79,8 +73,8 @@ let pp_dest pp_mem fmt = function
   | None -> Fmt.pf fmt "ø"
 
 let pp_move pp_mem fmt { name ; src ; dest ; ty } =
-  Fmt.pf fmt "@[<hv1>(%s:%a |@ @[<h>%a@] ←@ @[<h>%a@])@]"
-    name Printer.types ty
+  Fmt.pf fmt "@[<hv1>(%a:%a |@ @[<h>%a@] ←@ @[<h>%a@])@]"
+    Id.pp name Printer.types ty
     (pp_dest pp_mem) dest
     (pp_src pp_mem) src
 
@@ -117,11 +111,10 @@ module Layer = struct
   type t = Path.t
   let pp = Path.pp
   let pp_extra fmt x =
-    let v = Index.var "N" in
     let src_slots = paths_of_src x.src in
     let dest_slots = paths_of_dest x.dest in
     let l = src_slots @ dest_slots in
-    let f = Constraint.and_ (List.map (Path.Domain.make v) l) in
+    let f = Constraint.and_ (List.map Path.Domain.make l) in
     Fmt.pf fmt "@.@[<hov>%a@]" Constraint.pp f
 
   type conflict = int Constraint.t
@@ -150,16 +143,16 @@ let subtree2layer tyenv (r : Field.t t) =
     if Types.is_scalar mov.ty then
       transl_movement_scalar mov
     else
-      let k = Index.var @@ Name.fresh "k" in
+      let k = Index.var @@ Id.fresh "k" in
       [map_movement (fun e -> Path.(e ++ wild k)) mov]
   in
-  let transl_movement_conflict name ty src dest mov =
+  let transl_movement_conflict id ty src dest mov =
     (* Report.infof "Rewrite"
      *   "@[%a ⋈ %a = %a@]@."
      *   (pp_position Cursor.pp) src
      *   (pp_position Cursor.pp) dest
      *   Cursor.pp vector; *)
-    let index = Index.var @@ Name.fresh "k" in
+    let index = Index.var @@ Id.fresh "k" in
     let cell_suffixes, cursor_suffixes =
       Types.complement tyenv ty mov
     in
@@ -185,7 +178,7 @@ let subtree2layer tyenv (r : Field.t t) =
                 many (Path.of_fields mov) index ++
                 word (of_fields suffix))
         in
-        let name = Fmt.str "%s%a" name Field.pp_top suffix in
+        let name = Id.derive "%s%a" id Field.pp_top suffix in
         let src =  Slot (position (f src)) in
         let dest = Some (f dest) in
         { name ; src ; dest ; ty }
@@ -199,7 +192,7 @@ let subtree2layer tyenv (r : Field.t t) =
                 many (Path.of_fields mov) index ++
                 word_of_fields suffix)
         in
-        let name = Fmt.str "%s%a" name Field.pp_top suffix in
+        let name = Id.derive "%s%a" id Field.pp_top suffix in
         let src =  Slot (position (f src)) in
         let dest = Some (f dest) in
         transl_movement_no_conflict { name ; src ; dest ; ty }
@@ -276,15 +269,20 @@ module DepGraph (Mem : MEM) = struct
   let happens_before def1 def2 =
     conflict def1.src def2.dest
   let add_conflict g def1 def2 =
-    let g =
+    if V.equal def1 def2 then
       match happens_before def1 def2 with
       | [] -> g
       | i -> add_edge_e g (def1, i, def2)
-    in
-    match happens_before def2 def1 with
-    | [] -> g
-    | i -> add_edge_e g (def2, i, def1)
-  
+    else
+      let g =
+        match happens_before def1 def2 with
+        | [] -> g
+        | i -> add_edge_e g (def1, i, def2)
+      in
+      match happens_before def2 def1 with
+      | [] -> g
+      | i -> add_edge_e g (def2, i, def1)
+
   let create (moves : _ clause) =
     List.fold_left (fun g def1 ->
         let g = add_vertex g def1 in
@@ -298,14 +296,14 @@ module DepGraph (Mem : MEM) = struct
       let graph_attributes _g = [ `Rankdir `LeftToRight ]
       let default_vertex_attributes _g = []
       let vertex_name def =
-        Fmt.str "\"%s:%a\"" def.name Printer.types def.ty
+        Fmt.str "\"%a:%a\"" Id.pp def.name Printer.types def.ty
       let vertex_attributes ({name;src;dest;ty} as x) =
         let shape =
           if Types.is_scalar ty then `Shape `Ellipse else `Shape `Box
         in
         let label =
           Fmt.str "%a\n%a\n%a ← %a%a"
-            Name.pp name Printer.types ty
+            Id.pp name Printer.types ty
              (pp_dest Mem.pp) dest (pp_src Mem.pp) src
             Mem.pp_extra x
         in

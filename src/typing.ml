@@ -86,9 +86,9 @@ let rec type_expression tyenv env posmap (path : Field.t) expr0 expr_ty0 =
   | EApp _ | EVar _ | EConstant _ as expr ->
     let name =
       match expr with
-        | EVar n -> n
-        | EApp (n,_) -> Name.fresh n
-        | EConstant _ -> Name.fresh "const"
+        | EVar n -> Id.fresh n
+        | EApp (n,_) -> Id.fresh n
+        | EConstant c -> Id.freshf "C(%a)" Printer.constant c
         | EConstructor _ -> assert false
     in
     let dest = Some path in

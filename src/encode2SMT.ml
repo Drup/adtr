@@ -2,12 +2,10 @@
 module ZZ = Z3overlay.Make (struct let ctx = Z3.mk_context [] end)
 open ZZ
 
-module H = CCHashtbl.Make(Name)
-
 let rec index2smt h ({ monomes; constant } : Index.t) =
   let mk_monome (var, factor) =
     let sym = T.symbol @@
-      H.get_or_add h ~f:(fun n -> Symbol.declare Int n) ~k:var
+      Id.H.get_or_add h ~f:(fun n -> Symbol.declare Int @@ Id.to_string n) ~k:var
     in
     T.(int factor * sym)
   in
@@ -24,12 +22,12 @@ let rec constraint2smt h : _ Constraint.t -> _ = function
   | False -> T.false_
 
 let check_conflict p1 p2 =
-  let n = Index.var "N" in
-  let p2 = Path.refresh p2 in
-  let d1 = Path.Domain.make n p1 in
-  let d2 = Path.Domain.make n p2 in
+  let p1 = Path.map_vars Id.as_left p1 in
+  let p2 = Path.map_vars Id.as_right p2 in
+  let d1 = Path.Domain.make p1 in
+  let d2 = Path.Domain.make p2 in
   let e = Path.Dependencies.make p1 p2 in
-  let formula = constraint2smt (H.create 17) Constraint.(e &&& d1 &&& d2) in
+  let formula = constraint2smt (Id.H.create 17) Constraint.(e &&& d1 &&& d2) in
   (* Fmt.epr
    *   "@[<v2>Formula for conflict between@ %a@ %a"
    *   Path.pp p1 Path.pp p2

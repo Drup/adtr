@@ -24,7 +24,7 @@ module LF = struct
     Index.map_factors (fun factor -> Index.eval f factor) lf
 
 
-  let pp_monome fmt (var,k) = Fmt.pf fmt "%a*%a" Index.pp_parens k Name.pp var
+  let pp_monome fmt (var,k) = Fmt.pf fmt "%a*%a" Index.pp_parens k Id.pp var
   let pp fmt {Index. constant ; monomes } =
     match constant, monomes with
     | i, [] -> Index.pp_parens  fmt i
@@ -56,7 +56,7 @@ let identify_factors (lf1 : LF.t) (lf2 : LF.t) =
   let monomes1 = Index.map_of_monomes lf1.monomes in
   let monomes2 = Index.map_of_monomes lf2.monomes in
   let constrs =
-    List.map snd @@ Name.Map.to_list @@ Name.Map.merge (fun _ f1 f2 ->
+    List.map snd @@ Id.Map.to_list @@ Id.Map.merge (fun _ f1 f2 ->
         match f1, f2 with
         | None, None -> None
         | None, Some f | Some f, None -> Some Constraint.(f === Index.zero)
@@ -69,22 +69,21 @@ let identify_factors (lf1 : LF.t) (lf2 : LF.t) =
 module G = Rewrite.WithLayer
 
 let positivity_constraints g =
-  let n = Index.var "N" in
   G.fold_vertex (fun ({Rewrite. src ; dest ; name ; _ } as m) (lams, sigma) ->
       let src_slots = Rewrite.paths_of_src src in
       let dest_slots = Rewrite.paths_of_dest dest in
       let l = src_slots @ dest_slots in
-      let constrs = Constraint.and_ (List.map (Path.Domain.make n) l) in
+      let constrs = Constraint.and_ (List.map Path.Domain.make l) in
       let system = linearform_of_constraint constrs in
       (* Fmt.epr "@[<v2>D_%a:@ %a@]@."
-       *   Name.pp name
+       *   Id.pp name
        *   (Fmt.list Index.pp) system
        *   ; *)
-      let lamVec = List.map (fun _ -> Name.fresh ("λ" ^ name)) system in
-      let lam0 = Name.fresh ("λ0" ^ name) in
+      let lamVec = List.map (fun _ -> Id.derive "λ%s" name) system in
+      let lam0 = Id.derive "λ0%s" name in
       let lf = LF.wrap ~multipliers:lamVec ~const:lam0 system in
       (* Fmt.epr "@[<v2>σ(%a) =@ %a@]@."
-       *   Name.pp name
+       *   Id.pp name
        *   LF.pp lf; *)
       (G.V.Map.add m (lamVec,lam0) lams, G.V.Map.add m lf sigma)
     )
@@ -95,19 +94,19 @@ let increasing_constraints sigmas g =
       let src, q_edge, dest = edge in
       let system = linearform_of_constraint @@ Constraint.and_ q_edge in
       (* Fmt.epr "@[<v2>Q_(%a,%a):@ %a@]@."
-       *   Name.pp src.name Name.pp dest.name
+       *   Id.pp src.name Id.pp dest.name
        *   (Fmt.list Index.pp) system
        *   ; *)
-      let muVec = List.map (fun _ -> Name.fresh ("μ")) system in
-      let mu0 = Name.fresh ("μ0") in
+      let muVec = List.map (fun _ -> Id.fresh "μ") system in
+      let mu0 = Id.fresh "μ0" in
       let lf1 = LF.wrap ~multipliers:muVec ~const:mu0 system in
 
-      let epsilon = Name.fresh ("ε") in
-      let sigma_src = G.V.Map.find src sigmas in
-      let sigma_dest = Index.refresh_name @@ G.V.Map.find dest sigmas in
+      let epsilon = Id.fresh "ε" in
+      let sigma_src = Index.map_vars Id.as_left @@ G.V.Map.find src sigmas in
+      let sigma_dest = Index.map_vars Id.as_right @@ G.V.Map.find dest sigmas in
       let lf2 = LF.(sigma_dest - sigma_src - constvar epsilon) in
       (* Fmt.epr "@[<v2>Eq_(%a,%a):@ %a@ =@ %a@]@."
-       *   Name.pp src.name Name.pp dest.name
+       *   Id.pp src.name Id.pp dest.name
        *   LF.pp lf2 LF.pp lf1
        *   ; *)
       let new_constrs = identify_factors lf1 lf2 in
@@ -165,7 +164,7 @@ let mk_max_criterion epsilons =
   |> Index.sum
 
 let solve_with_smt constraints optims =
-  let vars = Encode2SMT.H.create 17 in
+  let vars = Id.H.create 17 in
   let formula = Encode2SMT.constraint2smt vars constraints in
   let optims = Encode2SMT.index2smt vars optims in
   let optim_sum = Encode2SMT.ZZ.Symbol.term Int optims in
@@ -188,7 +187,7 @@ let solve_with_smt constraints optims =
         let f v =
           Z.to_int @@
           Encode2SMT.ZZ.Model.get_value ~model @@
-          Encode2SMT.H.find vars v
+          Id.H.find vars v
         in
         Some f
     | Unkown _ ->
@@ -230,7 +229,7 @@ let mk_schedule g =
       match mk_schedule1D formula sigmas epsilons with
       | None -> None
       | Some (sched1D, epsilons') ->
-        if G.E.Map.equal Name.equal epsilons epsilons' then failwith "PLOUF";
+        if G.E.Map.equal Id.equal epsilons epsilons' then failwith "PLOUF";
         aux epsilons' (add_schedule sched1D sched)
   in
   let empty_schedule = G.V.Map.map (fun _ -> []) sigmas in
@@ -239,7 +238,7 @@ let mk_schedule g =
 let pp_schedule fmt sched =
   let f fmt (k, v) =
     Fmt.pf fmt "@[%a -> (%a)@]"
-      Name.pp k.Rewrite.name
+      Id.pp k.Rewrite.name
       (Fmt.list ~sep:Fmt.comma Index.pp) v
   in 
   Fmt.pf fmt "@[<v>%a@]" (Fmt.iter_bindings ~sep:Fmt.cut G.V.Map.iter f) sched
