@@ -26,9 +26,9 @@ add (tree : t, newt : t) : t = rewrite tree {
 
 Schedule: newt₀ -> ()
 Schedule: newt₁ -> ()
-Schedule: newt₂ -> (-1*k₂ + N!₀ + -1)
+Schedule: newt₂ -> (-1*k₂ + N!₀ + -2)
           t4.int@0₀ -> (-1*k₃ + N!₀ + -3)
-          t4.t@1₀ -> (-1*k₄ + -1*k₃ + N!₀ + -2)
+          t4.t@1₀ -> (-1*k₄ + -1*k₃ + N!₀ + -3)
           t4.t@2₀ -> (-1*k₅ + -1*k₃ + N!₀ + -2)
           t4.t@3₀ -> (-1*k₆ + -1*k₃ + N!₀ + -3)
           t4[]₀ -> (-1*k₃ + N!₀ + -2)
