@@ -10,70 +10,70 @@ rotate (t:tree) : tree = rewrite t {
 (*EXPECT
 rotate (t : tree) : tree = rewrite t {
   | 
-  | (b[]:tree |
+  | (b[]₀:tree |
      .tree@0.tree@2.tree@0^k₀ ←
      .tree@0.tree@2.tree@0^(k₀ + 1))
-    (b.int@0:int |
+    (b.int@0₀:int |
      .tree@0.tree@2.tree@0^k₀.int@0 ←
      .tree@0.tree@2.tree@0^(k₀ + 1).int@0)
-    (b.int@1:int |
+    (b.int@1₀:int |
      .tree@0.tree@2.tree@0^k₀.int@1 ←
      .tree@0.tree@2.tree@0^(k₀ + 1).int@1)
-    (b.tree@2:tree |
+    (b.tree@2₀:tree |
      .tree@0.tree@2.tree@0^k₀.tree@2.φ^k₁ ←
      .tree@0.tree@2.tree@0^(k₀ + 1).tree@2.φ^k₁)
-    (c:tree | .tree@2.tree@0.φ^k₂ ← c:.tree@0.tree@2.tree@2.φ^k₂)
-    (d[]:tree | .tree@2^(k₃ + 2) ← .tree@2^(k₃ + 1))
-    (d.int@0:int | .tree@2^(k₃ + 2).int@0 ← .tree@2^(k₃ + 1).int@0)
-    (d.int@1:int | .tree@2^(k₃ + 2).int@1 ← .tree@2^(k₃ + 1).int@1)
-    (d.tree@0:tree |
+    (c₀:tree | .tree@2.tree@0.φ^k₂ ← c:.tree@0.tree@2.tree@2.φ^k₂)
+    (d[]₀:tree | .tree@2^(k₃ + 2) ← .tree@2^(k₃ + 1))
+    (d.int@0₀:int | .tree@2^(k₃ + 2).int@0 ← .tree@2^(k₃ + 1).int@0)
+    (d.int@1₀:int | .tree@2^(k₃ + 2).int@1 ← .tree@2^(k₃ + 1).int@1)
+    (d.tree@0₀:tree |
      .tree@2^(k₃ + 2).tree@0.φ^k₄ ←
      .tree@2^(k₃ + 1).tree@0.φ^k₄)
-    (i2:int | .int@1 ← i2:.tree@0.tree@2.int@1)
-    (i3:int | .tree@2.int@1 ← i3:.int@1)
-  | (a[]:tree | .tree@0^(k₅ + 2) ← .tree@0^(k₅ + 3))
-    (a.int@0:int | .tree@0^(k₅ + 2).int@0 ← .tree@0^(k₅ + 3).int@0)
-    (a.int@1:int | .tree@0^(k₅ + 2).int@1 ← .tree@0^(k₅ + 3).int@1)
-    (a.tree@2:tree |
+    (i2₀:int | .int@1 ← i2:.tree@0.tree@2.int@1)
+    (i3₀:int | .tree@2.int@1 ← i3:.int@1)
+  | (a[]₀:tree | .tree@0^(k₅ + 2) ← .tree@0^(k₅ + 3))
+    (a.int@0₀:int | .tree@0^(k₅ + 2).int@0 ← .tree@0^(k₅ + 3).int@0)
+    (a.int@1₀:int | .tree@0^(k₅ + 2).int@1 ← .tree@0^(k₅ + 3).int@1)
+    (a.tree@2₀:tree |
      .tree@0^(k₅ + 2).tree@2.φ^k₆ ←
      .tree@0^(k₅ + 3).tree@2.φ^k₆)
-    (b:tree | .tree@0.tree@2.φ^k₇ ← b:.tree@0.tree@0.tree@2.φ^k₇)
-    (c:tree | .tree@2.tree@0.φ^k₈ ← c:.tree@0.tree@2.φ^k₈)
-    (d[]:tree | .tree@2^(k₉ + 2) ← .tree@2^(k₉ + 1))
-    (d.int@0:int | .tree@2^(k₉ + 2).int@0 ← .tree@2^(k₉ + 1).int@0)
-    (d.int@1:int | .tree@2^(k₉ + 2).int@1 ← .tree@2^(k₉ + 1).int@1)
-    (d.tree@0:tree |
+    (b₁:tree | .tree@0.tree@2.φ^k₇ ← b:.tree@0.tree@0.tree@2.φ^k₇)
+    (c₁:tree | .tree@2.tree@0.φ^k₈ ← c:.tree@0.tree@2.φ^k₈)
+    (d[]₁:tree | .tree@2^(k₉ + 2) ← .tree@2^(k₉ + 1))
+    (d.int@0₁:int | .tree@2^(k₉ + 2).int@0 ← .tree@2^(k₉ + 1).int@0)
+    (d.int@1₁:int | .tree@2^(k₉ + 2).int@1 ← .tree@2^(k₉ + 1).int@1)
+    (d.tree@0₁:tree |
      .tree@2^(k₉ + 2).tree@0.φ^k₁₀ ←
      .tree@2^(k₉ + 1).tree@0.φ^k₁₀)
-    (i1:int | .tree@0.int@1 ← i1:.tree@0.tree@0.int@1)
-    (i2:int | .int@1 ← i2:.tree@0.int@1)
-    (i3:int | .tree@2.int@1 ← i3:.int@1)
+    (i1₁:int | .tree@0.int@1 ← i1:.tree@0.tree@0.int@1)
+    (i2₁:int | .int@1 ← i2:.tree@0.int@1)
+    (i3₁:int | .tree@2.int@1 ← i3:.int@1)
 }
 
 Schedule: 
-Schedule: b.int@0 -> (k₀ + 0*N + 4)
-          b.int@1 -> (k₀ + 0*N + 2)
-          b.tree@2 -> (-1*k₁ + k₀ + N + 1)
-          b[] -> (k₀ + 0*N + 2)
-          c -> (-1*k₂ + N)
-          d.int@0 -> (-1*k₃ + N + -3)
-          d.int@1 -> (-1*k₃ + N + -3)
-          d.tree@0 -> (-1*k₄ + -1*k₃ + N + -3)
-          d[] -> (-1*k₃ + N + -2)
-          i2 -> (0*N + 1)
-          i3 -> (0*N)
-Schedule: a.int@0 -> (k₅ + 0*N + 3)
-          a.int@1 -> (k₅ + 0*N + 3)
-          a.tree@2 -> (0*k₆ + k₅ + 0*N)
-          a[] -> (k₅ + 0*N)
-          b -> (-1*k₇ + N + 1)
-          c -> (-1*k₈ + N)
-          d.int@0 -> (-1*k₉ + N + -3)
-          d.int@1 -> (-1*k₉ + N + -3)
-          d.tree@0 -> (-1*k₉ + -1*k₁₀ + N + -3)
-          d[] -> (-1*k₉ + N + -2)
-          i1 -> (0*N + 2)
-          i2 -> (0*N + 1)
-          i3 -> (0*N)
+Schedule: b.int@0₀ -> (k₀ + 0*N!₀)
+          b.int@1₀ -> (k₀ + 0*N!₀ + 2)
+          b.tree@2₀ -> (-1*k₁ + k₀ + N!₀ + 1)
+          b[]₀ -> (k₀ + 0*N!₀ + 2)
+          c₀ -> (-1*k₂ + N!₀)
+          d.int@0₀ -> (-1*k₃ + N!₀ + -3)
+          d.int@1₀ -> (-1*k₃ + N!₀ + -3)
+          d.tree@0₀ -> (-1*k₄ + -1*k₃ + N!₀ + -3)
+          d[]₀ -> (-1*k₃ + N!₀ + -2)
+          i2₀ -> (0*N!₀ + 1)
+          i3₀ -> (0*N!₀)
+Schedule: a.int@0₀ -> (k₅ + 0*N!₀ + 4)
+          a.int@1₀ -> (k₅ + 0*N!₀ + 3)
+          a.tree@2₀ -> (0*k₆ + k₅ + 0*N!₀)
+          a[]₀ -> (k₅ + 0*N!₀ + 3)
+          b₁ -> (-1*k₇ + N!₀ + 1)
+          c₁ -> (-1*k₈ + N!₀)
+          d.int@0₁ -> (-1*k₉ + N!₀ + -3)
+          d.int@1₁ -> (-1*k₉ + N!₀ + -3)
+          d.tree@0₁ -> (-1*k₁₀ + -1*k₉ + N!₀ + -3)
+          d[]₁ -> (-1*k₉ + N!₀ + -2)
+          i1₁ -> (0*N!₀ + 2)
+          i2₁ -> (0*N!₀ + 1)
+          i3₁ -> (0*N!₀)
 
 *)

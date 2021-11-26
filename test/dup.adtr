@@ -8,14 +8,14 @@ dup (t:t, i:int) : t = rewrite t {
 }
 (*EXPECT
 dup (t : t, i : int) : t = rewrite t {
-  | (i:int | .int@0 ← i)
-    (x:t | .t@2.φ^k₀ ← x:.t@0.φ^k₀)
-    (x:t | .t@1.φ^k₁ ← x:.t@0.φ^k₁)
+  | (i₀:int | .int@0 ← i)
+    (x₀:t | .t@1.φ^k₀ ← x:.t@0.φ^k₀)
+    (x₁:t | .t@2.φ^k₁ ← x:.t@0.φ^k₁)
 }
 
-Schedule: i -> ()
-          x -> ()
-          x -> ()
+Schedule: i₀ -> ()
+          x₀ -> ()
+          x₁ -> ()
 
 *)
 

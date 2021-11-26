@@ -23,9 +23,9 @@ incr2 (l : list) : list = rewrite l {
 incr2 (l : list) : list = rewrite l {
   | 
   | (+₁:int | .int@0 ← +(i:.int@0, i:.int@0))
-    (i:int | .list@1.int@0 ← i:.int@0)
-    (rest[]:list | .list@1^(k₀ + 2) ← .list@1^(k₀ + 1))
-    (rest.int@0:int | .list@1^(k₀ + 2).int@0 ← .list@1^(k₀ + 1).int@0)
+    (i₀:int | .list@1.int@0 ← i:.int@0)
+    (rest[]₀:list | .list@1^(k₀ + 2) ← .list@1^(k₀ + 1))
+    (rest.int@0₀:int | .list@1^(k₀ + 2).int@0 ← .list@1^(k₀ + 1).int@0)
 }
 
 Schedule: 

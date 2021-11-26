@@ -5,10 +5,10 @@ down (x : foo) : foo = rewrite x {
 }
 (*EXPECT
 down (x : foo) : foo = rewrite x {
-  | (t[]:foo | .foo@0^k₀ ← .foo@0^(k₀ + 1))
+  | (t[]₀:foo | .foo@0^k₀ ← .foo@0^(k₀ + 1))
 }
 
-Schedule: t[] -> (k₀ + 0*N)
+Schedule: t[]₀ -> (k₀ + 0*N!₀)
 
 *)
 
@@ -17,10 +17,10 @@ up (x : foo) : foo = rewrite x {
 }
 (*EXPECT
 up (x : foo) : foo = rewrite x {
-  | (t[]:foo | .foo@0^(k₁ + 1) ← .foo@0^k₁)
+  | (t[]₁:foo | .foo@0^(k₁ + 1) ← .foo@0^k₁)
 }
 
-Schedule: t[] -> (-1*k₁ + N + -1)
+Schedule: t[]₁ -> (-1*k₁ + N!₀ + -1)
 
 *)
 
@@ -31,10 +31,10 @@ side (x : foo2) : foo2 = rewrite x {
 }
 (*EXPECT
 side (x : foo2) : foo2 = rewrite x {
-  | (t:foo2 | .foo2@0.φ^k₂ ← t:.foo2@1.φ^k₂)
+  | (t₂:foo2 | .foo2@0.φ^k₂ ← t:.foo2@1.φ^k₂)
 }
 
-Schedule: t -> ()
+Schedule: t₂ -> ()
 
 *)
 
@@ -43,11 +43,11 @@ lift (x : foo2) : foo2 = rewrite x {
 }
 (*EXPECT
 lift (x : foo2) : foo2 = rewrite x {
-  | (const₀:int | .int@0 ← 0)
-    (t:foo2 | .foo2@1.φ^k₃ ← t:.foo2@0.φ^k₃)
+  | (C(0)₀:int | .int@0 ← 0)
+    (t₃:foo2 | .foo2@1.φ^k₃ ← t:.foo2@0.φ^k₃)
 }
 
-Schedule: const₀ -> ()
-          t -> ()
+Schedule: C(0)₀ -> ()
+          t₃ -> ()
 
 *)

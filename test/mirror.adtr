@@ -7,8 +7,8 @@ mirror (t:tree) : tree = rewrite t {
 (*EXPECT
 mirror (t : tree) : tree = rewrite t {
   | 
-  | (a:tree | .tree@2.φ^k₀ ← a:.tree@0.φ^k₀)
-    (b:tree | .tree@0.φ^k₁ ← b:.tree@2.φ^k₁)
+  | (a₀:tree | .tree@2.φ^k₀ ← a:.tree@0.φ^k₀)
+    (b₀:tree | .tree@0.φ^k₁ ← b:.tree@2.φ^k₁)
 }
 
 Schedule: 
@@ -23,10 +23,10 @@ mirror2 (t:tree) : tree = rewrite t {
 (*EXPECT
 mirror2 (t : tree) : tree = rewrite t {
   | 
-  | (a:tree | .tree@2.φ^k₂ ← a:.tree@0.φ^k₂)
-    (b1:tree | .tree@0.tree@2.φ^k₃ ← b1:.tree@2.tree@0.φ^k₃)
-    (b2:tree | .tree@0.tree@0.φ^k₄ ← b2:.tree@2.tree@2.φ^k₄)
-    (j:int | .tree@0.int@1 ← j:.tree@2.int@1)
+  | (a₁:tree | .tree@2.φ^k₂ ← a:.tree@0.φ^k₂)
+    (b1₀:tree | .tree@0.tree@2.φ^k₃ ← b1:.tree@2.tree@0.φ^k₃)
+    (b2₀:tree | .tree@0.tree@0.φ^k₄ ← b2:.tree@2.tree@2.φ^k₄)
+    (j₀:int | .tree@0.int@1 ← j:.tree@2.int@1)
 }
 
 Schedule: 
@@ -42,12 +42,12 @@ mirror3 (t:tree) : tree = rewrite t {
 (*EXPECT
 mirror3 (t : tree) : tree = rewrite t {
   | 
-  | (a1:tree | .tree@2.tree@2.φ^k₅ ← a1:.tree@0.tree@0.φ^k₅)
-    (a2:tree | .tree@2.tree@0.φ^k₆ ← a2:.tree@0.tree@2.φ^k₆)
-    (b1:tree | .tree@0.tree@2.φ^k₇ ← b1:.tree@2.tree@0.φ^k₇)
-    (b2:tree | .tree@0.tree@0.φ^k₈ ← b2:.tree@2.tree@2.φ^k₈)
-    (ia:int | .tree@2.int@1 ← ia:.tree@0.int@1)
-    (ib:int | .tree@0.int@1 ← ib:.tree@2.int@1)
+  | (a1₀:tree | .tree@2.tree@2.φ^k₅ ← a1:.tree@0.tree@0.φ^k₅)
+    (a2₀:tree | .tree@2.tree@0.φ^k₆ ← a2:.tree@0.tree@2.φ^k₆)
+    (b1₁:tree | .tree@0.tree@2.φ^k₇ ← b1:.tree@2.tree@0.φ^k₇)
+    (b2₁:tree | .tree@0.tree@0.φ^k₈ ← b2:.tree@2.tree@2.φ^k₈)
+    (ia₀:int | .tree@2.int@1 ← ia:.tree@0.int@1)
+    (ib₀:int | .tree@0.int@1 ← ib:.tree@2.int@1)
 }
 
 Schedule: 
@@ -64,9 +64,9 @@ mirror (t:tree3) : tree3 = rewrite t {
 (*EXPECT
 mirror (t : tree3) : tree3 = rewrite t {
   | 
-  | (a:tree | .tree@1.φ^k₉ ← a:.tree@0.φ^k₉)
-    (b:tree | .tree@2.φ^k₁₀ ← b:.tree@1.φ^k₁₀)
-    (c:tree | .tree@0.φ^k₁₁ ← c:.tree@2.φ^k₁₁)
+  | (a₂:tree | .tree@1.φ^k₉ ← a:.tree@0.φ^k₉)
+    (b₁:tree | .tree@2.φ^k₁₀ ← b:.tree@1.φ^k₁₀)
+    (c₀:tree | .tree@0.φ^k₁₁ ← c:.tree@2.φ^k₁₁)
 }
 
 Schedule: 
