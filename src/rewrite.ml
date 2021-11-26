@@ -131,7 +131,7 @@ module Layer = struct
   let default : conflict = Constraint.False
 
   let conflict p1 p2 : conflict option =
-    Encode2SMT.check_conflict p1 p2
+    Encode2LP.check_conflict p1 p2
 end
 
 

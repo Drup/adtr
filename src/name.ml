@@ -6,7 +6,7 @@ module Map = CCMap.Make(String)
 module Set = CCSet.Make(String)
 
 let refresh n =
-  if n = "N" then n else  n ^ "x"
+  if n = "N" then n else  n ^ "!"
 
 let _indice_array = [|"₀";"₁";"₂";"₃";"₄";"₅";"₆";"₇";"₈";"₉"|]
 let indice_array = [|"0";"1";"2";"3";"4";"5";"6";"7";"8";"9"|]

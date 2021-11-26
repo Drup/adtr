@@ -85,6 +85,11 @@ let rec wnf f = match f with
 let from_wnf l =
   or_ @@ List.map (fun l -> and_ @@ List.map (fun x -> Constr x) l)  l
 
+let as_conjunction f =
+  match wnf f with
+  | [x] -> x
+  | _ -> invalid_arg "Not a conjunction"
+
 let rec present v = function
   | Constr (Leq (i1, i2)) 
   | Constr (Eq (i1, i2)) ->

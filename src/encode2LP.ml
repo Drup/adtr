@@ -29,12 +29,17 @@ let constraint2lp h (cnstr : int Constraint.ineq list) =
   List.map (ineq2lp h) cnstr
 
 let check_conflict p1 p2 =
+  let p2 = Path.refresh p2 in
+  let n = Index.var "N" in
+  let d1 = Constraint.as_conjunction @@ Path.Domain.make n p1 in
+  let d2 = Constraint.as_conjunction @@ Path.Domain.make n p2 in  
   let check_validity conj =
     let h = H.create 17 in
-    let cnstrs = constraint2lp h conj in
+    let cnstrs = constraint2lp h (d1 @ d2 @ conj) in
     (* We minimize the sum of all vars, since it's always bounded by 0 *)
     let optim = Lp.sum @@ H.values_list h in
     let prob = Lp.make (Lp.minimize optim) cnstrs in
+    Fmt.epr "Problem:@.%s@." (Lp.to_string ~short:true prob);    
     match Lp_glpk.solve ~term_output:false prob with
     | Error _s ->
       Fmt.epr "  Error: %s@." _s;
@@ -43,7 +48,6 @@ let check_conflict p1 p2 =
       let f = Constraint.and_ @@ List.map (fun x -> Constraint.Constr x) conj in
       Some f
   in
-  let p2 = Path.refresh p2 in
   match Path.Dependencies.make p1 p2 with
   | True -> Some Constraint.tt
   | False -> None
@@ -52,6 +56,9 @@ let check_conflict p1 p2 =
       "@[Conflict between@ %a@ %a@]@."
       Path.pp p1 Path.pp p2
     ;
+    Fmt.epr "  @[<v2>Domains:@ @[%a@]@ @[%a@]@]@."
+      Constraint.pp (Constraint.from_wnf [d1])
+      Constraint.pp (Constraint.from_wnf [d2]);
     Fmt.epr "  @[Formula:@ %a@]@."
       Constraint.pp e;
     let disj = Constraint.wnf e in
