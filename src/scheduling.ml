@@ -165,7 +165,6 @@ let make_constraints g =
       (fun c -> Constraint.((Index.zero ==< c) &&& (c ==< Index.const 1)))
     |> Iter.to_list
   in
-
   let all_constraints =
     lambdas_constraints @ mus_constraints @ epsilons_constraints @ constraints
   in
@@ -176,13 +175,13 @@ let solve_with_smt constraints sum_epsilons sum_vars =
   let formula = Encode2SMT.constraint2smt vars constraints in
   let sum_epsilons = Encode2SMT.index2smt vars sum_epsilons in
   let sum_vars = Encode2SMT.index2smt vars sum_vars in
-  let optim_sum = Encode2SMT.ZZ.Symbol.term Int sum_epsilons in
   (* Fmt.epr "@[<v2>Formula:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify formula) ;
    * Fmt.epr "@[<v2>Optim:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify optims) ; *)
   let res =
     let open Encode2SMT.ZZ.Optimize in
     let solver = make () in
     add ~solver formula;
+    add ~solver Encode2SMT.ZZ.T.(sum_epsilons >= int 1);
     let _ = maximize ~solver sum_epsilons in
     let _ = minimize ~solver sum_vars in
     (* Fmt.epr "@[<v>Solver:@ %s@]@." (Z3.Optimize.to_string solver) ; *)
@@ -191,15 +190,12 @@ let solve_with_smt constraints sum_epsilons sum_vars =
   begin match res with
     | Sat (lazy model) ->
       (* Fmt.epr "@[<v2>Model:@ %s@." (Z3.Model.to_string model); *)
-      if Z.equal Z.zero @@ Encode2SMT.ZZ.Model.get_value ~model optim_sum then
-        None
-      else
-        let f v =
-          Z.to_int @@
-          Encode2SMT.ZZ.Model.get_value ~model @@
-          Id.H.find vars v
-        in
-        Some f
+      let f v =
+        Z.to_int @@
+        Encode2SMT.ZZ.Model.get_value ~model @@
+        Id.H.find vars v
+      in
+      Some f
     | Unkown _ ->
       None
     | Unsat _ ->
