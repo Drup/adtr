@@ -127,6 +127,13 @@ let all_vars f it =
     it
   |> Iter.to_list
 
+let sum_all_lambdas vars = 
+  G.V.Map.values vars
+  |> Iter.map (fun (lams, lam0) -> List.map Index.var (lam0 :: lams))
+  |> Iter.to_list
+  |> List.flatten
+  |> Index.sum
+
 let make_constraints g =
   let lambdas, sigmas = positivity_constraints g in
   let mus, epsilons, constraints = increasing_constraints sigmas g in
@@ -143,6 +150,13 @@ let make_constraints g =
     G.E.Map.values mus
     |> all_vars (fun c -> Constraint.(Index.zero ==< c))
   in
+  let sum_all_vars =
+    Iter.append (G.E.Map.values mus) (G.V.Map.values lambdas)
+    |> Iter.map (fun (lams, lam0) -> List.map Index.var (lam0 :: lams))
+    |> Iter.to_list
+    |> List.flatten
+    |> Index.sum
+  in
   (* All 0 ≤ ε ≤ 1 *)
   let epsilons_constraints =
     G.E.Map.values epsilons
@@ -155,22 +169,22 @@ let make_constraints g =
   let all_constraints =
     lambdas_constraints @ mus_constraints @ epsilons_constraints @ constraints
   in
-  Constraint.and_ all_constraints, `E epsilons, `L lambdas, `S sigmas
+  Constraint.and_ all_constraints, `E epsilons, `Sum sum_all_vars, `S sigmas
 
-let solve_with_smt constraints dependencies_criterion schedule_criterion =
+let solve_with_smt constraints sum_epsilons sum_vars =
   let vars = Id.H.create 17 in
   let formula = Encode2SMT.constraint2smt vars constraints in
-  let optims_max = Encode2SMT.index2smt vars dependencies_criterion in
-  let optims_min = Encode2SMT.index2smt vars schedule_criterion in
-  let optim_sum = Encode2SMT.ZZ.Symbol.term Int optims_max in
+  let sum_epsilons = Encode2SMT.index2smt vars sum_epsilons in
+  let sum_vars = Encode2SMT.index2smt vars sum_vars in
+  let optim_sum = Encode2SMT.ZZ.Symbol.term Int sum_epsilons in
   (* Fmt.epr "@[<v2>Formula:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify formula) ;
    * Fmt.epr "@[<v2>Optim:@ %s@]@." Encode2SMT.ZZ.T.(to_string @@ simplify optims) ; *)
   let res =
     let open Encode2SMT.ZZ.Optimize in
     let solver = make () in
     add ~solver formula;
-    let _ = maximize ~solver optims_max in
-    let _ = minimize ~solver optims_min in
+    let _ = maximize ~solver sum_epsilons in
+    let _ = minimize ~solver sum_vars in
     (* Fmt.epr "@[<v>Solver:@ %s@]@." (Z3.Optimize.to_string solver) ; *)
     check ~solver []
   in
@@ -198,23 +212,15 @@ let compute_schedule f sigmas =
 let find_unconsumed_epsilons f epsilons =
   G.E.Map.filter (fun _ eps -> f eps = 0) epsilons
 
-let sum_all_lambdas vars = 
-  G.V.Map.values vars
-  |> Iter.map (fun (lams, lam0) -> List.map Index.var (lam0 :: lams))
-  |> Iter.to_list
-  |> List.flatten
-  |> Index.sum
-
 let sum_all_epsilons vars = 
   G.E.Map.values vars
   |> Iter.map Index.var
   |> Iter.to_list
   |> Index.sum
 
-let mk_schedule1D ~formula ~sigmas ~epsilons ~lambdas =
-  let dependencies_criterion = sum_all_epsilons epsilons in
-  let schedule_criterion = sum_all_lambdas lambdas in
-  match solve_with_smt formula dependencies_criterion schedule_criterion with
+let mk_schedule1D ~formula ~sigmas ~epsilons ~sumvars =
+  let sum_epsilons = sum_all_epsilons epsilons in
+  match solve_with_smt formula sum_epsilons sumvars with
   | None ->
     (* Fmt.epr "No schedule@."; *)
     None
@@ -231,12 +237,12 @@ let add_schedule sched1D sched =
   G.V.Map.merge merge1 sched1D sched
 
 let mk_schedule g =
-  let formula, `E epsilons0, `L lambdas, `S sigmas = make_constraints g in
+  let formula, `E epsilons0, `Sum sumvars, `S sigmas = make_constraints g in
   let rec aux epsilons sched =
     if G.E.Map.is_empty epsilons then
       Some sched
     else
-      match mk_schedule1D ~formula ~sigmas ~epsilons ~lambdas with
+      match mk_schedule1D ~formula ~sigmas ~epsilons ~sumvars with
       | None -> None
       | Some (sched1D, epsilons') ->
         if G.E.Map.equal Id.equal epsilons epsilons' then failwith "PLOUF";
