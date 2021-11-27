@@ -12,6 +12,6 @@ pull_up (t : tree) : tree = rewrite t {
 }
 
 Schedule: u.tree@0₀ -> (0*k₁ + k₀ + 0*N!₀)
-          u[]₀ -> (k₀ + 0*N!₀ + 1)
+          u[]₀ -> (k₀ + 0*N!₀)
 
 *)
