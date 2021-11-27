@@ -72,11 +72,8 @@ module Word = struct
     | [], [] -> Some (`eq, empty)
     | [], l -> Some (`left, l)
     | l, [] -> Some (`right, l)
-    | _::t1, Any::t2 | Any::t1, _::t2 ->
-      conflict t1 t2
-    | Field x1::t1, Field x2::t2 ->
-      if x1 = x2 then conflict t1 t2
-      else None
+    | c1::t1, c2::t2 ->
+      if match_char c1 c2 then conflict t1 t2 else None
 
   (** [count_prefix_and_split ~prefix w] returns [i,rest]
       such that [w = prefix^i ++ rest].
@@ -262,14 +259,14 @@ module Dependencies = struct
            -----------------------------------------------
                      w1 ++ rest1 == w^f ++ rest2
         *)
-        | Some (`left, w') ->
+        | Some (`right, w') ->
           let index = Index.decr index in
           overlap (Word w' :: rest1) (Monome { index ; word } :: rest2)
         (* w1 ++ w' = w    rest1 == (w' ++ w1)^(f-1) ++ w' ++ rest2
            -----------------------------------------------
                      w1 ++ rest1 == w^f ++ rest2
         *)
-        | Some (`right, w') ->
+        | Some (`left, w') ->
           let index = Index.decr index in
           let word = w' @ w1 in
           overlap rest1 (Monome { index ; word } :: Word w' :: rest2)
