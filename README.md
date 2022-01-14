@@ -23,7 +23,7 @@ To update the expected blocks after testing, run `dune promote`.
 
 ## Run only one file
 ```
-dune exec adtr -m batch path/to/file
+dune exec adtr -- -m batch path/to/file
 ```
 
 You can use `--depgraph` to get dot files of the dependency graphs of the rewrite operations.
